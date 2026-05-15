@@ -26,6 +26,18 @@ Phase 2 foundation completed:
 - Local intent parser contract and basic parser
 - Safe action handler contracts and placeholder stubs
 
+Phase 3 foundation completed:
+
+- Installed app detection through launchable PackageManager queries
+- Fuzzy app matching with common aliases such as insta, ig, wa, yt, and chrome
+- Real app launch flow with graceful failure responses
+- Permission-aware contacts repository using ContactsContract
+- Fuzzy contact matching for names and relation-style labels
+- Contact call flow with ACTION_CALL when permitted and ACTION_DIAL fallback
+- In-memory clarification handling for ambiguous app/contact matches
+- Local English, Hinglish, and Hindi response selection for app/contact actions
+- No cloud dependency for app opening or contact calling
+
 Out of scope for V1:
 
 - Cloud AI dependency

@@ -32,11 +32,15 @@ foundation:
 - Manual mic voice input wrapper using Android SpeechRecognizer
 - Android TextToSpeech wrapper for spoken replies
 - Local assistant loop skeleton with parser and action contracts
+- Real installed-app detection and app launching
+- Local contact matching with call/dial behavior
+- In-memory clarification handling for ambiguous app/contact matches
+- Permission-aware contact flow with no cloud dependency
 
-Future behavior such as full app launching, contact lookup/calling, local
-memory, clarification handling, and real device controls will be expanded across
-later phases. Wake word detection, Accessibility Service automation, cloud AI,
-login, and API keys are not part of V1 scaffold work.
+Future behavior such as richer contact selection, local memory, full device
+controls, and better language mirroring will be expanded across later phases.
+Wake word detection, Accessibility Service automation, cloud AI, login, and API
+keys are not part of V1 scaffold work.
 
 ## Build instructions
 

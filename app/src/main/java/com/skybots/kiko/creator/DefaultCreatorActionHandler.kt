@@ -8,6 +8,7 @@ class DefaultCreatorActionHandler : CreatorActionHandler {
     override fun handle(intent: AssistantIntent): AssistantActionResult {
         val response = when (intent.languageHint) {
             LanguageHint.HINGLISH -> "Mujhe Siddhartha ne banaya hai."
+            LanguageHint.HINDI -> "मुझे Siddhartha ने बनाया है।"
             LanguageHint.ENGLISH,
             LanguageHint.SYSTEM_DEFAULT -> "I was created by Siddhartha Abhimanyu."
         }

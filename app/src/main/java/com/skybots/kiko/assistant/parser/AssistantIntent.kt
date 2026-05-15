@@ -7,5 +7,7 @@ data class AssistantIntent(
     val rawText: String,
     val target: String? = null,
     val value: String? = null,
+    val appQuery: String? = null,
+    val contactQuery: String? = null,
     val languageHint: LanguageHint = LanguageHint.SYSTEM_DEFAULT,
 )

@@ -4,14 +4,14 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 
-class PermissionManager(context: Context) {
+class PermissionManager(context: Context) : PermissionChecker {
     private val appContext = context.applicationContext
 
     fun hasRecordAudioPermission(): Boolean = hasPermission(KikoPermission.RECORD_AUDIO)
 
-    fun hasReadContactsPermission(): Boolean = hasPermission(KikoPermission.READ_CONTACTS)
+    override fun hasReadContactsPermission(): Boolean = hasPermission(KikoPermission.READ_CONTACTS)
 
-    fun hasCallPhonePermission(): Boolean = hasPermission(KikoPermission.CALL_PHONE)
+    override fun hasCallPhonePermission(): Boolean = hasPermission(KikoPermission.CALL_PHONE)
 
     fun hasCameraPermission(): Boolean = hasPermission(KikoPermission.CAMERA)
 

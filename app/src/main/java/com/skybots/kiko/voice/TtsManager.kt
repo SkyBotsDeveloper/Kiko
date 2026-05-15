@@ -92,7 +92,8 @@ class TtsManager(
     ) {
         val candidates = when (languageHint) {
             LanguageHint.ENGLISH -> listOf(Locale.ENGLISH, Locale.getDefault())
-            LanguageHint.HINGLISH -> listOf(Locale("hi", "IN"), Locale.ENGLISH, Locale.getDefault())
+            LanguageHint.HINGLISH,
+            LanguageHint.HINDI -> listOf(Locale("hi", "IN"), Locale.ENGLISH, Locale.getDefault())
             LanguageHint.SYSTEM_DEFAULT -> listOf(Locale.getDefault(), Locale.ENGLISH)
         }
 

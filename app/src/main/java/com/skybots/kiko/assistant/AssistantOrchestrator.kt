@@ -7,6 +7,12 @@ import com.skybots.kiko.actions.contacts.ContactActionHandler
 import com.skybots.kiko.actions.contacts.StubContactActionHandler
 import com.skybots.kiko.actions.device.DeviceActionHandler
 import com.skybots.kiko.actions.device.StubDeviceActionHandler
+import com.skybots.kiko.assistant.clarification.ClarificationCandidate
+import com.skybots.kiko.assistant.clarification.ClarificationManager
+import com.skybots.kiko.assistant.clarification.ClarificationResolution
+import com.skybots.kiko.assistant.clarification.PendingAction
+import com.skybots.kiko.assistant.clarification.PendingActionType
+import com.skybots.kiko.assistant.language.LocalizedResponses
 import com.skybots.kiko.assistant.parser.AssistantIntent
 import com.skybots.kiko.assistant.parser.BasicLocalIntentParser
 import com.skybots.kiko.assistant.parser.IntentParser
@@ -20,15 +26,50 @@ class AssistantOrchestrator(
     private val contactActionHandler: ContactActionHandler = StubContactActionHandler(),
     private val deviceActionHandler: DeviceActionHandler = StubDeviceActionHandler(),
     private val creatorActionHandler: CreatorActionHandler = DefaultCreatorActionHandler(),
+    private val clarificationManager: ClarificationManager = ClarificationManager(),
 ) {
     fun processTranscript(transcript: String): AssistantResult =
         runCatching {
+            when (val clarification = clarificationManager.resolve(transcript)) {
+                ClarificationResolution.NoPending,
+                ClarificationResolution.Expired -> Unit
+                is ClarificationResolution.Matched -> {
+                    return@runCatching routeClarification(
+                        pendingAction = clarification.pendingAction,
+                        candidate = clarification.candidate,
+                    )
+                }
+                is ClarificationResolution.Retry -> {
+                    val response = if (clarification.cleared) {
+                        LocalizedResponses.clarificationCleared(
+                            clarification.pendingAction.languageHint,
+                        )
+                    } else {
+                        LocalizedResponses.clarificationRetry(
+                            type = clarification.pendingAction.type,
+                            candidateNames = clarification.pendingAction.candidates.map { it.label },
+                            languageHint = clarification.pendingAction.languageHint,
+                        )
+                    }
+                    return@runCatching AssistantResult(
+                        intent = AssistantIntent(
+                            type = IntentType.UNKNOWN,
+                            rawText = transcript,
+                            languageHint = clarification.pendingAction.languageHint,
+                        ),
+                        response = response,
+                        runtimeState = AssistantRuntimeState.IDLE,
+                    )
+                }
+            }
+
             val intent = intentParser.parse(transcript)
             val actionResult = route(intent)
             AssistantResult(
                 intent = intent,
                 response = actionResult.response,
                 runtimeState = AssistantRuntimeState.IDLE,
+                requestedPermission = actionResult.requestedPermission,
             )
         }.getOrElse { error ->
             val fallbackIntent = AssistantIntent(
@@ -61,4 +102,35 @@ class AssistantOrchestrator(
                 response = "I did not understand that yet.",
             )
         }
+
+    private fun routeClarification(
+        pendingAction: PendingAction,
+        candidate: ClarificationCandidate,
+    ): AssistantResult {
+        val actionResult = when (pendingAction.type) {
+            PendingActionType.OPEN_APP -> appActionHandler.handleClarification(
+                candidate = candidate,
+                languageHint = pendingAction.languageHint,
+            )
+            PendingActionType.CALL_CONTACT -> contactActionHandler.handleClarification(
+                candidate = candidate,
+                languageHint = pendingAction.languageHint,
+            )
+        }
+
+        return AssistantResult(
+            intent = AssistantIntent(
+                type = when (pendingAction.type) {
+                    PendingActionType.OPEN_APP -> IntentType.OPEN_APP
+                    PendingActionType.CALL_CONTACT -> IntentType.CALL_CONTACT
+                },
+                rawText = candidate.label,
+                target = candidate.label,
+                languageHint = pendingAction.languageHint,
+            ),
+            response = actionResult.response,
+            runtimeState = AssistantRuntimeState.IDLE,
+            requestedPermission = actionResult.requestedPermission,
+        )
+    }
 }

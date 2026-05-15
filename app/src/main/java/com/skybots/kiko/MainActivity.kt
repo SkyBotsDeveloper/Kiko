@@ -13,8 +13,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.skybots.kiko.actions.apps.AndroidAppLauncher
+import com.skybots.kiko.actions.apps.AppMatcher
+import com.skybots.kiko.actions.apps.PackageManagerInstalledAppRepository
+import com.skybots.kiko.actions.apps.RealAppActionHandler
+import com.skybots.kiko.actions.contacts.AndroidContactsRepository
+import com.skybots.kiko.actions.contacts.AndroidPhoneActionLauncher
+import com.skybots.kiko.actions.contacts.ContactMatcher
+import com.skybots.kiko.actions.contacts.RealContactActionHandler
 import com.skybots.kiko.assistant.AssistantOrchestrator
 import com.skybots.kiko.assistant.AssistantRuntimeState
+import com.skybots.kiko.assistant.clarification.ClarificationManager
+import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.ui.KikoHomeScreen
 import com.skybots.kiko.ui.KikoHomeUiState
@@ -41,8 +51,32 @@ private fun KikoApp() {
     val permissionManager = remember(context) {
         PermissionManager(context)
     }
-    val orchestrator = remember {
-        AssistantOrchestrator()
+    val clarificationManager = remember {
+        ClarificationManager()
+    }
+    val contactsRepository = remember(context) {
+        AndroidContactsRepository(
+            context = context,
+            permissionChecker = permissionManager,
+        )
+    }
+    val orchestrator = remember(context) {
+        AssistantOrchestrator(
+            appActionHandler = RealAppActionHandler(
+                installedAppRepository = PackageManagerInstalledAppRepository(context),
+                appMatcher = AppMatcher(),
+                appLauncher = AndroidAppLauncher(context),
+                clarificationManager = clarificationManager,
+            ),
+            contactActionHandler = RealContactActionHandler(
+                contactsRepository = contactsRepository,
+                contactMatcher = ContactMatcher(),
+                permissionChecker = permissionManager,
+                phoneActionLauncher = AndroidPhoneActionLauncher(context),
+                clarificationManager = clarificationManager,
+            ),
+            clarificationManager = clarificationManager,
+        )
     }
 
     var permissionStatuses by remember {
@@ -84,6 +118,38 @@ private fun KikoApp() {
         }
     }
 
+    val contactsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        refreshPermissionStatuses()
+        if (granted) {
+            contactsRepository.refresh()
+            uiState = uiState.copy(
+                runtimeState = AssistantRuntimeState.IDLE,
+                kikoResponse = "Contacts permission granted. Please say the call command again.",
+                statusMessage = "Contacts permission granted.",
+            )
+        } else {
+            uiState = uiState.copy(
+                runtimeState = AssistantRuntimeState.ERROR,
+                kikoResponse = "Contacts permission is needed to find and call people.",
+                statusMessage = "Contacts permission denied.",
+            )
+        }
+    }
+
+    fun requestActionPermission(permission: KikoPermission?) {
+        when (permission) {
+            KikoPermission.READ_CONTACTS -> contactsPermissionLauncher.launch(
+                Manifest.permission.READ_CONTACTS,
+            )
+            null,
+            KikoPermission.RECORD_AUDIO,
+            KikoPermission.CALL_PHONE,
+            KikoPermission.CAMERA -> Unit
+        }
+    }
+
     fun processTranscript(transcript: String) {
         uiState = uiState.copy(
             transcript = transcript,
@@ -102,6 +168,7 @@ private fun KikoApp() {
             statusMessage = result.errorMessage ?: "Response ready.",
         )
         ttsManager.speak(result.response, result.intent.languageHint)
+        requestActionPermission(result.requestedPermission)
     }
 
     val speechRecognizerManager = remember(context) {
