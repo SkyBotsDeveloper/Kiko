@@ -15,6 +15,9 @@ import android.os.VibratorManager
 import com.skybots.kiko.MainActivity
 import com.skybots.kiko.memory.KikoDatabase
 import com.skybots.kiko.memory.RoomMemoryRepository
+import com.skybots.kiko.orbit.FloatingOrbitPermissionHelper
+import com.skybots.kiko.orbit.FloatingOrbitService
+import com.skybots.kiko.orbit.FloatingOrbitSettingsStore
 import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.wake.opensource.OpenSourceWakeWordEngine
 import com.skybots.kiko.wake.opensource.OpenSourceWakeConfig
@@ -26,6 +29,8 @@ class WakeWordService : Service() {
     private lateinit var notificationHelper: WakeWordNotificationHelper
     private lateinit var memoryRepository: RoomMemoryRepository
     private lateinit var wakeDebugSettingsStore: WakeDebugSettingsStore
+    private lateinit var floatingOrbitSettingsStore: FloatingOrbitSettingsStore
+    private lateinit var floatingOrbitPermissionHelper: FloatingOrbitPermissionHelper
     private val screenLifecyclePolicy = WakeScreenLifecyclePolicy()
     private var engine: WakeWordEngine? = null
     private var lastConfig: WakeWordConfig = WakeWordConfig()
@@ -50,6 +55,8 @@ class WakeWordService : Service() {
         notificationHelper = WakeWordNotificationHelper(this)
         memoryRepository = RoomMemoryRepository(KikoDatabase.create(this))
         wakeDebugSettingsStore = WakeDebugSettingsStore(this)
+        floatingOrbitSettingsStore = FloatingOrbitSettingsStore(this)
+        floatingOrbitPermissionHelper = FloatingOrbitPermissionHelper(this)
         registerScreenReceiver()
     }
 
@@ -285,6 +292,13 @@ class WakeWordService : Service() {
     }
 
     private fun openKikoOrbitIfAllowed() {
+        if (floatingOrbitSettingsStore.read().enabled && floatingOrbitPermissionHelper.canDrawOverlays()) {
+            runCatching {
+                startService(FloatingOrbitService.showListeningIntent(this))
+            }.onFailure { error ->
+                WakeWordDiagnostics.error(error.message ?: "Could not show floating Kiko orbit.")
+            }
+        }
         runCatching {
             startActivity(
                 Intent(this, MainActivity::class.java).apply {

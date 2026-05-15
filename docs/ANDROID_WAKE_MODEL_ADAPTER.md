@@ -83,6 +83,11 @@ the model can be `Ready, log-mel` while the wake trigger is still blocked for
 safety because calibration needs a better model. This avoids presenting the
 sanity model as broken service behavior.
 
+The optional floating orbit uses the same calibration state. With the current
+sanity model it should show blocked/needs-training state rather than triggering
+real wake. Balanced/quality training remains the next step before daily wake
+use.
+
 ## Validation Before Claiming Real Wake
 
 Do not treat the model as production-ready until:

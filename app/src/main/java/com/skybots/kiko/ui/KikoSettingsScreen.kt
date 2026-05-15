@@ -70,6 +70,8 @@ fun KikoSettingsScreen(
     wakeDebugSettings: WakeDebugSettings,
     wakeScoreSnapshot: WakeScoreSnapshot,
     wakeSelfTestResult: String,
+    floatingOrbitEnabled: Boolean,
+    floatingOrbitPermissionGranted: Boolean,
     showWakeWordTestControls: Boolean,
     showWakeDebugControls: Boolean,
     onBackClick: () -> Unit,
@@ -84,6 +86,11 @@ fun KikoSettingsScreen(
     onWakeDebugEnabledChange: (Boolean) -> Unit,
     onWakeDebugThresholdChange: (Float) -> Unit,
     onAllowUnsafeCalibrationChange: (Boolean) -> Unit,
+    onFloatingOrbitEnabledChange: (Boolean) -> Unit,
+    onOpenOverlayPermissionClick: () -> Unit,
+    onStartFloatingOrbitClick: () -> Unit,
+    onStopFloatingOrbitClick: () -> Unit,
+    onUseInAppOrbitFallbackClick: () -> Unit,
     onResetWakeScoreClick: () -> Unit,
     onRunWakeSelfTestClick: () -> Unit,
     onCopyWakeDebugSummaryClick: () -> Unit,
@@ -221,6 +228,55 @@ fun KikoSettingsScreen(
                     ) {
                         Text("Test wake flow / Simulate Hey Kiko")
                     }
+                }
+            }
+
+            PreferenceSection(title = "Floating Orbit") {
+                ToggleRow(
+                    title = "Enable floating orbit",
+                    subtitle = "Shows a small draggable Kiko bubble when Android overlay permission is granted.",
+                    checked = floatingOrbitEnabled,
+                    onCheckedChange = onFloatingOrbitEnabledChange,
+                )
+                PermissionLine(
+                    label = "Overlay permission",
+                    value = if (floatingOrbitPermissionGranted) "Granted" else "Not granted",
+                )
+                Text(
+                    text = "Android requires Draw over other apps permission for a floating assistant bubble. Without it, Kiko uses the in-app orbit fallback.",
+                    color = KikoMutedText,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Button(
+                    onClick = onOpenOverlayPermissionClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = KikoAccent),
+                ) {
+                    Text("Open overlay permission settings")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onStartFloatingOrbitClick,
+                        enabled = floatingOrbitPermissionGranted,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Start now")
+                    }
+                    OutlinedButton(
+                        onClick = onStopFloatingOrbitClick,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("Stop")
+                    }
+                }
+                OutlinedButton(
+                    onClick = onUseInAppOrbitFallbackClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Use in-app orbit fallback")
                 }
             }
 

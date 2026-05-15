@@ -71,7 +71,7 @@ class WakeWordNotificationHelper(
             )
             .addAction(
                 R.drawable.ic_kiko_orb,
-                "Open Kiko",
+                "Open Kiko orbit",
                 openKikoPendingIntent(),
             )
             .build()

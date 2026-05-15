@@ -92,9 +92,8 @@ Manual mic and wake detection arbitrate microphone use: Kiko stops the wake
 AudioRecord path before starting Android SpeechRecognizer, then restarts wake
 listening after the command/TTS flow when wake word remains enabled.
 
-Manual mic, fake wake, and real wake all use the same compact in-app orbit
-listening UI. This is intentionally not an overlay service yet, so no overlay
-permission is required.
+Manual mic, fake wake, and real wake all use the same compact orbit listening
+UI. The in-app orbit is always available as the safe fallback.
 
 ## Orbit-first app experience
 
@@ -114,7 +113,26 @@ Orbit states stay lightweight:
 - locked/screen-off pause: dimmed orbit state
 
 Fake/Test wake and real WakeDetected use the same orbit listening route. The
-orbit is in-app only in this phase; Kiko does not request overlay permission.
+in-app orbit does not need overlay permission.
+
+## Optional floating orbit mode
+
+Kiko now includes an optional floating orbit mode for a more Siri-like assistant
+feel. Android requires Draw over other apps permission
+(`SYSTEM_ALERT_WINDOW`) for this. Kiko does not force the permission at startup.
+If overlay permission is missing, settings explain the requirement and the
+in-app orbit remains the fallback.
+
+When enabled and permitted, the floating orbit is a small draggable bubble.
+Tapping it opens a compact panel with mic, settings, close, and stop-wake
+controls. Manual mic from the panel routes through the existing activity
+SpeechRecognizer path so wake AudioRecord can be released first and V1 command
+behavior stays unchanged. Fake/Test wake and safe real WakeDetected can expand
+the floating panel; unsafe sanity models remain blocked by calibration.
+
+The floating orbit is removed/hidden on screen off and can return after unlock.
+It does not show on the lock screen and does not hide Android's microphone
+privacy indicators or the required foreground wake notification.
 
 ## Battery strategy
 

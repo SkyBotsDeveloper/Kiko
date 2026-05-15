@@ -53,6 +53,10 @@ import com.skybots.kiko.assistant.language.LanguageStyle
 import com.skybots.kiko.assistant.language.ReplyStyle
 import com.skybots.kiko.memory.KikoDatabase
 import com.skybots.kiko.memory.RoomMemoryRepository
+import com.skybots.kiko.orbit.FloatingOrbitCommand
+import com.skybots.kiko.orbit.FloatingOrbitController
+import com.skybots.kiko.orbit.FloatingOrbitRuntime
+import com.skybots.kiko.orbit.FloatingOrbitService
 import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.ui.KikoHomeScreen
@@ -85,6 +89,12 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra(WakeWordService.EXTRA_WAKE_DETECTED, false) == true) {
             WakeWordRuntime.markPendingWakeLaunch()
         }
+        if (intent?.getBooleanExtra(EXTRA_START_MANUAL_MIC, false) == true) {
+            FloatingOrbitRuntime.requestManualMic()
+        }
+        if (intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true) {
+            FloatingOrbitRuntime.requestOpenSettings()
+        }
         setContent {
             KikoTheme {
                 KikoApp()
@@ -99,6 +109,17 @@ class MainActivity : ComponentActivity() {
             WakeWordRuntime.markPendingWakeLaunch()
             WakeWordRuntime.publish(WakeWordEvent.WakeDetected)
         }
+        if (intent.getBooleanExtra(EXTRA_START_MANUAL_MIC, false)) {
+            FloatingOrbitRuntime.requestManualMic()
+        }
+        if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) {
+            FloatingOrbitRuntime.requestOpenSettings()
+        }
+    }
+
+    companion object {
+        const val EXTRA_START_MANUAL_MIC = "com.skybots.kiko.orbit.EXTRA_START_MANUAL_MIC"
+        const val EXTRA_OPEN_SETTINGS = "com.skybots.kiko.orbit.EXTRA_OPEN_SETTINGS"
     }
 }
 
@@ -194,6 +215,9 @@ private fun KikoApp() {
             memoryRepository = memoryRepository,
         )
     }
+    val floatingOrbitController = remember(context) {
+        FloatingOrbitController(context)
+    }
     val mainHandler = remember {
         Handler(Looper.getMainLooper())
     }
@@ -221,6 +245,12 @@ private fun KikoApp() {
     var pendingWakeEnableRequest by remember {
         mutableStateOf(false)
     }
+    var floatingOrbitEnabled by remember {
+        mutableStateOf(floatingOrbitController.settings().enabled)
+    }
+    var floatingOrbitPermissionGranted by remember {
+        mutableStateOf(floatingOrbitController.hasOverlayPermission())
+    }
     val showWakeDebugControls = remember(context) {
         (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
@@ -238,6 +268,8 @@ private fun KikoApp() {
         wakeModelHealth = TfliteWakeModelRunner.inspectModelHealth(wakeModelAssetManager, OpenSourceWakeConfig())
         wakeScoreSnapshot = WakeWordRuntime.currentScoreSnapshot()
         wakeDebugSettings = wakeDebugSettingsStore.read()
+        floatingOrbitEnabled = floatingOrbitController.settings().enabled
+        floatingOrbitPermissionGranted = floatingOrbitController.hasOverlayPermission()
     }
 
     fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {
@@ -267,6 +299,17 @@ private fun KikoApp() {
         }
     }
 
+    fun refreshFloatingOrbit() {
+        floatingOrbitEnabled = floatingOrbitController.settings().enabled
+        floatingOrbitPermissionGranted = floatingOrbitController.hasOverlayPermission()
+    }
+
+    fun showFloatingListeningIfEnabled() {
+        if (floatingOrbitController.settings().enabled && floatingOrbitController.hasOverlayPermission()) {
+            context.startService(FloatingOrbitService.showListeningIntent(context))
+        }
+    }
+
     val wakeMicArbitration = remember(wakeWordController, memoryRepository) {
         WakeMicArbitration(
             isWakeEnabled = { memoryRepository.getUserPreferences().wakeWordEnabled },
@@ -284,6 +327,8 @@ private fun KikoApp() {
                         if (wakeMicArbitration.resumeIfNeeded()) {
                             refreshWakeWordStatus()
                         }
+                        floatingOrbitController.startIfEnabled()
+                        refreshFloatingOrbit()
                         uiState.copy(
                             runtimeState = AssistantRuntimeState.IDLE,
                             statusMessage = "Ready for manual voice input.",
@@ -306,6 +351,8 @@ private fun KikoApp() {
                     if (wakeMicArbitration.resumeIfNeeded()) {
                         refreshWakeWordStatus()
                     }
+                    floatingOrbitController.startIfEnabled()
+                    refreshFloatingOrbit()
                 }
             }
         }
@@ -423,6 +470,7 @@ private fun KikoApp() {
 
     fun startManualVoiceInput() {
         ttsManager.stop()
+        showFloatingListeningIfEnabled()
         val pausedWake = wakeMicArbitration.pauseForManualMic()
         refreshWakeWordStatus()
         val startListening = {
@@ -536,7 +584,53 @@ private fun KikoApp() {
         onDispose { unsubscribe() }
     }
 
+    DisposableEffect(speechRecognizerManager, floatingOrbitController) {
+        val unsubscribe = FloatingOrbitRuntime.subscribe { command ->
+            when (command) {
+                FloatingOrbitCommand.StartManualMic -> {
+                    if (permissionManager.hasRecordAudioPermission()) {
+                        startManualVoiceInput()
+                    } else {
+                        DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
+                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+                FloatingOrbitCommand.OpenSettings -> {
+                    refreshPreferences()
+                    refreshPermissionStatuses()
+                    refreshWakeWordStatus()
+                    systemBrightnessControlAllowed = Settings.System.canWrite(context)
+                    showSettings = true
+                }
+            }
+        }
+        onDispose { unsubscribe() }
+    }
+
     LaunchedEffect(Unit) {
+        floatingOrbitController.startIfEnabled()
+        refreshFloatingOrbit()
+        if (FloatingOrbitRuntime.consumePendingOpenSettings() ||
+            activity.intent?.getBooleanExtra(MainActivity.EXTRA_OPEN_SETTINGS, false) == true
+        ) {
+            activity.intent?.removeExtra(MainActivity.EXTRA_OPEN_SETTINGS)
+            refreshPreferences()
+            refreshPermissionStatuses()
+            refreshWakeWordStatus()
+            systemBrightnessControlAllowed = Settings.System.canWrite(context)
+            showSettings = true
+        }
+        if (FloatingOrbitRuntime.consumePendingManualMic() ||
+            activity.intent?.getBooleanExtra(MainActivity.EXTRA_START_MANUAL_MIC, false) == true
+        ) {
+            activity.intent?.removeExtra(MainActivity.EXTRA_START_MANUAL_MIC)
+            if (permissionManager.hasRecordAudioPermission()) {
+                startManualVoiceInput()
+            } else {
+                DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        }
         if (WakeWordRuntime.consumePendingWakeLaunch() ||
             activity.intent?.getBooleanExtra(WakeWordService.EXTRA_WAKE_DETECTED, false) == true
         ) {
@@ -570,6 +664,8 @@ private fun KikoApp() {
             wakeDebugSettings = wakeDebugSettings,
             wakeScoreSnapshot = wakeScoreSnapshot,
             wakeSelfTestResult = wakeSelfTestResult,
+            floatingOrbitEnabled = floatingOrbitEnabled,
+            floatingOrbitPermissionGranted = floatingOrbitPermissionGranted,
             showWakeWordTestControls = showWakeDebugControls,
             showWakeDebugControls = showWakeDebugControls,
             onBackClick = {
@@ -636,6 +732,29 @@ private fun KikoApp() {
                 if (wakeDebugSettings.enabled) {
                     restartWakeIfEnabled()
                 }
+            },
+            onFloatingOrbitEnabledChange = { enabled ->
+                val result = floatingOrbitController.setEnabled(enabled)
+                refreshFloatingOrbit()
+                uiState = uiState.copy(statusMessage = result.message, kikoResponse = result.message)
+            },
+            onOpenOverlayPermissionClick = {
+                floatingOrbitController.openOverlaySettings()
+            },
+            onStartFloatingOrbitClick = {
+                val result = floatingOrbitController.start()
+                refreshFloatingOrbit()
+                uiState = uiState.copy(statusMessage = result.message, kikoResponse = result.message)
+            },
+            onStopFloatingOrbitClick = {
+                val result = floatingOrbitController.stop()
+                refreshFloatingOrbit()
+                uiState = uiState.copy(statusMessage = result.message, kikoResponse = result.message)
+            },
+            onUseInAppOrbitFallbackClick = {
+                val result = floatingOrbitController.setEnabled(false)
+                refreshFloatingOrbit()
+                uiState = uiState.copy(statusMessage = result.message, kikoResponse = "Using in-app orbit fallback.")
             },
             onResetWakeScoreClick = {
                 WakeWordRuntime.resetScore()

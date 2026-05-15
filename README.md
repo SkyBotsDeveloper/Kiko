@@ -51,6 +51,12 @@ The app is now orbit-first: opening Kiko shows a compact glowing assistant orbit
 with mic, wake status, and settings controls instead of a full settings-style
 home screen. Full settings remain available from the gear or wake status pill.
 
+V2 also adds an optional floating orbit mode. Android requires the user to grant
+Draw over other apps permission before Kiko can show a draggable assistant
+bubble over other apps. Kiko does not request this aggressively; if permission is
+missing, the in-app orbit remains the fallback. The floating orbit can open a
+compact panel, route to settings, and start the existing manual mic flow.
+
 To protect battery on low/mid-range phones, V2 pauses wake inference when the
 phone screen turns off or the device locks. The wake preference stays enabled,
 and the foreground notification changes to show that Kiko wake is paused while

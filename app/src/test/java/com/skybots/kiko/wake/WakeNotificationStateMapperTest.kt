@@ -40,4 +40,17 @@ class WakeNotificationStateMapperTest {
 
         assertEquals("Kiko wake paused while phone is locked", content.text)
     }
+
+    @Test
+    fun floatingOrbitActiveUsesOrbitText() {
+        val content = WakeNotificationStateMapper.contentFor(
+            phrase = "Hey Kiko",
+            engineState = WakeWordEngineState.Listening,
+            calibrationStatus = WakeCalibrationStatus.OK,
+            modelStatus = WakeEngineHealthStatus.LOG_MEL_COMPATIBLE,
+            floatingOrbitActive = true,
+        )
+
+        assertEquals("Kiko floating orbit is active", content.text)
+    }
 }

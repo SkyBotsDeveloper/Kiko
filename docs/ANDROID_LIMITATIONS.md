@@ -57,9 +57,13 @@ TFLite inference while keeping the user's wake preference enabled. Wake listenin
 resumes after unlock/user-present when allowed by Android. Locked-screen or
 always-listen behavior is a future option and is not enabled by default.
 
-The in-app wake experience is orbit-first and does not use overlay permission in
-this phase. The Android foreground notification remains required while active
-background microphone wake listening is running.
+The in-app wake experience is orbit-first and does not require overlay
+permission. A true floating orbit over other apps is optional and requires
+Android Draw over other apps permission (`SYSTEM_ALERT_WINDOW`). Kiko does not
+force that permission at startup; if it is missing, the in-app orbit remains the
+fallback. The Android foreground notification remains required while active
+background microphone wake listening is running, and Kiko does not hide Android
+privacy/microphone indicators.
 
 The open-source wake engine expects a trained local TFLite model at
 `app/src/main/assets/wake/hey_kiko.tflite`. If the model is missing, invalid, or

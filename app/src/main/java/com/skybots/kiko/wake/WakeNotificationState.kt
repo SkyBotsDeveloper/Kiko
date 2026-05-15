@@ -13,8 +13,13 @@ object WakeNotificationStateMapper {
         engineState: WakeWordEngineState,
         calibrationStatus: WakeCalibrationStatus,
         modelStatus: WakeEngineHealthStatus,
+        floatingOrbitActive: Boolean = false,
     ): WakeNotificationContent =
         when {
+            floatingOrbitActive -> WakeNotificationContent(
+                title = "Kiko Orbit",
+                text = "Kiko floating orbit is active",
+            )
             engineState == WakeWordEngineState.PausedLocked -> WakeNotificationContent(
                 title = "Kiko Wake Word",
                 text = "Kiko wake paused while phone is locked",

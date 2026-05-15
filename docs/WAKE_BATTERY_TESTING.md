@@ -43,6 +43,8 @@ Watch for:
 - Turning the phone screen off or locking the device pauses wake AudioRecord and
   TFLite inference by default while keeping the wake preference enabled.
 - Unlocking/user-present resumes wake listening only when wake had been enabled.
+- Floating orbit mode is optional; the bubble is hidden/removed on screen off
+  and should not keep wake inference running while locked.
 - Missing model does not crash the app.
 - Feature-input models use the Android log-mel adapter and do not run inference
   more often than the configured stride.
