@@ -19,7 +19,8 @@ needed, speak responses with Android TTS, and run basic Android actions.
 
 ## Current phase status
 
-This branch contains only the clean initial Android scaffold:
+This branch contains the initial Android scaffold plus the Phase 2 V1 assistant
+foundation:
 
 - Kotlin Android app
 - Jetpack Compose UI
@@ -27,10 +28,15 @@ This branch contains only the clean initial Android scaffold:
 - Package name `com.skybots.kiko`
 - Minimum SDK 26
 - Basic dark premium placeholder screen
+- Permission foundation for microphone, contacts, phone calls, and camera
+- Manual mic voice input wrapper using Android SpeechRecognizer
+- Android TextToSpeech wrapper for spoken replies
+- Local assistant loop skeleton with parser and action contracts
 
-Future behavior such as wake word detection, speech recognition, TTS, local
-memory, app launching, contacts, phone calls, and device controls is not
-implemented in this phase.
+Future behavior such as full app launching, contact lookup/calling, local
+memory, clarification handling, and real device controls will be expanded across
+later phases. Wake word detection, Accessibility Service automation, cloud AI,
+login, and API keys are not part of V1 scaffold work.
 
 ## Build instructions
 

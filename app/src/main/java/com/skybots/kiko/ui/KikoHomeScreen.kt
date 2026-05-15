@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -47,8 +46,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.skybots.kiko.app.KikoAppConfig
+import com.skybots.kiko.assistant.AssistantRuntimeState
 import com.skybots.kiko.creator.CreatorIdentity
-import com.skybots.kiko.permissions.PermissionStatusItem
+import com.skybots.kiko.permissions.KikoPermission
+import com.skybots.kiko.permissions.PermissionStatus
 import com.skybots.kiko.ui.theme.KikoAccent
 import com.skybots.kiko.ui.theme.KikoBackground
 import com.skybots.kiko.ui.theme.KikoBorder
@@ -57,13 +58,12 @@ import com.skybots.kiko.ui.theme.KikoSurface
 import com.skybots.kiko.ui.theme.KikoTheme
 
 @Composable
-fun KikoHomeScreen(modifier: Modifier = Modifier) {
-    val permissionItems = listOf(
-        PermissionStatusItem(name = "Microphone", state = "Not requested"),
-        PermissionStatusItem(name = "Contacts", state = "Not requested"),
-        PermissionStatusItem(name = "Phone", state = "Not requested"),
-    )
-
+fun KikoHomeScreen(
+    uiState: KikoHomeUiState,
+    permissionStatuses: List<PermissionStatus>,
+    onMicClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -76,7 +76,7 @@ fun KikoHomeScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            KikoHeader()
+            KikoHeader(uiState = uiState)
 
             Column(
                 modifier = Modifier
@@ -86,22 +86,30 @@ fun KikoHomeScreen(modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Spacer(modifier = Modifier.height(18.dp))
-                KikoOrb()
-                Spacer(modifier = Modifier.height(18.dp))
-                MicPlaceholderButton()
-                Spacer(modifier = Modifier.height(22.dp))
-                AssistantTextPlaceholders()
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                KikoOrb(isListening = uiState.runtimeState == AssistantRuntimeState.LISTENING)
+                Spacer(modifier = Modifier.height(16.dp))
+                MicButton(
+                    isListening = uiState.runtimeState == AssistantRuntimeState.LISTENING,
+                    isEnabled = uiState.runtimeState != AssistantRuntimeState.PROCESSING &&
+                        uiState.runtimeState != AssistantRuntimeState.SPEAKING,
+                    onClick = onMicClick,
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                AssistantTextPlaceholders(
+                    transcript = uiState.transcript,
+                    response = uiState.kikoResponse,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            PermissionStatusSection(permissionItems = permissionItems)
+            PermissionStatusSection(permissionStatuses = permissionStatuses)
         }
     }
 }
 
 @Composable
-private fun KikoHeader() {
+private fun KikoHeader(uiState: KikoHomeUiState) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -122,17 +130,48 @@ private fun KikoHeader() {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
+        Spacer(modifier = Modifier.height(10.dp))
+        RuntimeStatusLine(uiState = uiState)
     }
 }
 
 @Composable
-private fun KikoOrb() {
+private fun RuntimeStatusLine(uiState: KikoHomeUiState) {
+    Surface(
+        color = KikoSurface,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, KikoBorder),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = uiState.runtimeState.label,
+                color = KikoAccent,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = uiState.statusMessage,
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun KikoOrb(isListening: Boolean) {
     val transition = rememberInfiniteTransition(label = "kiko-orb")
     val pulse = transition.animateFloat(
-        initialValue = 0.72f,
-        targetValue = 1f,
+        initialValue = if (isListening) 0.82f else 0.72f,
+        targetValue = if (isListening) 1.08f else 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1600),
+            animation = tween(durationMillis = if (isListening) 900 else 1600),
             repeatMode = RepeatMode.Reverse,
         ),
         label = "orb-pulse",
@@ -179,25 +218,35 @@ private fun KikoOrb() {
 }
 
 @Composable
-private fun MicPlaceholderButton() {
+private fun MicButton(
+    isListening: Boolean,
+    isEnabled: Boolean,
+    onClick: () -> Unit,
+) {
     FilledIconButton(
-        onClick = {},
+        onClick = onClick,
+        enabled = isEnabled,
         modifier = Modifier.size(58.dp),
         colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = KikoAccent,
+            containerColor = if (isListening) Color.White else KikoAccent,
             contentColor = KikoBackground,
+            disabledContainerColor = KikoSurface,
+            disabledContentColor = KikoMutedText,
         ),
     ) {
         Icon(
             imageVector = Icons.Rounded.Mic,
-            contentDescription = "Microphone placeholder",
+            contentDescription = if (isListening) "Listening" else "Start voice input",
             modifier = Modifier.size(26.dp),
         )
     }
 }
 
 @Composable
-private fun AssistantTextPlaceholders() {
+private fun AssistantTextPlaceholders(
+    transcript: String,
+    response: String,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -205,11 +254,11 @@ private fun AssistantTextPlaceholders() {
     ) {
         PlaceholderLine(
             label = "Transcript",
-            value = "Your voice input will appear here.",
+            value = transcript,
         )
         PlaceholderLine(
             label = "Kiko",
-            value = "Kiko response placeholder.",
+            value = response,
         )
     }
 }
@@ -243,7 +292,7 @@ private fun PlaceholderLine(
 }
 
 @Composable
-private fun PermissionStatusSection(permissionItems: List<PermissionStatusItem>) {
+private fun PermissionStatusSection(permissionStatuses: List<PermissionStatus>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -259,36 +308,51 @@ private fun PermissionStatusSection(permissionItems: List<PermissionStatusItem>)
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        permissionItems.forEach { item ->
-            PermissionStatusRow(item = item)
+        permissionStatuses.forEach { status ->
+            PermissionStatusRow(status = status)
         }
     }
 }
 
 @Composable
-private fun PermissionStatusRow(item: PermissionStatusItem) {
+private fun PermissionStatusRow(status: PermissionStatus) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = item.name,
+            text = status.permission.displayName,
             color = KikoMutedText,
             style = MaterialTheme.typography.bodySmall,
         )
         Text(
-            text = item.state,
-            color = Color.White.copy(alpha = 0.72f),
+            text = status.stateLabel,
+            color = if (status.isGranted) KikoAccent else Color.White.copy(alpha = 0.72f),
             style = MaterialTheme.typography.labelMedium,
         )
     }
 }
 
+private val AssistantRuntimeState.label: String
+    get() = when (this) {
+        AssistantRuntimeState.IDLE -> "Idle"
+        AssistantRuntimeState.LISTENING -> "Listening"
+        AssistantRuntimeState.PROCESSING -> "Processing"
+        AssistantRuntimeState.SPEAKING -> "Speaking"
+        AssistantRuntimeState.ERROR -> "Error"
+    }
+
 @Preview(showBackground = true, backgroundColor = 0xFF06080D)
 @Composable
 private fun KikoHomeScreenPreview() {
     KikoTheme {
-        KikoHomeScreen()
+        KikoHomeScreen(
+            uiState = KikoHomeUiState(),
+            permissionStatuses = KikoPermission.entries.map { permission ->
+                PermissionStatus(permission = permission, isGranted = false)
+            },
+            onMicClick = {},
+        )
     }
 }

@@ -16,6 +16,16 @@ Planned V1 features:
 - Language mirroring
 - Creator identity knowledge
 
+Phase 2 foundation completed:
+
+- Permission status foundation for microphone, contacts, phone calls, and camera
+- Manual microphone request flow
+- SpeechRecognizer wrapper for one-shot manual voice input
+- TextToSpeech wrapper for local spoken responses
+- AssistantOrchestrator skeleton
+- Local intent parser contract and basic parser
+- Safe action handler contracts and placeholder stubs
+
 Out of scope for V1:
 
 - Cloud AI dependency
