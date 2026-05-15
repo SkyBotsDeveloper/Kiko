@@ -8,4 +8,5 @@ data class PendingAction(
     val languageHint: LanguageHint,
     val createdAtMillis: Long,
     val failureCount: Int = 0,
+    val originalQuery: String? = null,
 )

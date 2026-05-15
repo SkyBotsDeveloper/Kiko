@@ -48,6 +48,21 @@ Phase 4 foundation completed:
 - Multi-number contact clarification for contacts with Mobile/Home/etc. numbers
 - Device-control responses in English, Hinglish, and Hindi
 
+Phase 5 foundation completed:
+
+- Room DB foundation for structured local memory
+- Stored user preferences for language style, reply style, voice replies,
+  personalization, and optional interaction summaries
+- Local app/contact alias memory after user-approved clarification outcomes
+- Pending clarification persistence with expiry for short process recreation
+- Reminder storage integrated with Room while keeping inexact scheduling limits
+- Settings screen for preferences, local memory clear/export/import, brightness
+  permission affordance, notification status, and About Kiko
+- JSON memory export/import that excludes secrets, raw contact dumps, and full
+  raw conversation history
+- Improved language/style preference routing across app, contact, device,
+  creator, unknown, internet-required, permission, and memory responses
+
 Out of scope for V1:
 
 - Cloud AI dependency

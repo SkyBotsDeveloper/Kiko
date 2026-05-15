@@ -3,10 +3,7 @@ package com.skybots.kiko.assistant.language
 import com.skybots.kiko.assistant.clarification.PendingActionType
 
 object LocalizedResponses {
-    fun openingApp(
-        appName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun openingApp(appName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$appName khol raha hoon."
             LanguageHint.HINDI -> "$appName खोल रहा हूँ।"
@@ -30,10 +27,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I couldn't find that app on this phone."
         }
 
-    fun appLaunchFailed(
-        appName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun appLaunchFailed(appName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$appName open nahi ho paya."
             LanguageHint.HINDI -> "$appName open नहीं हो पाया।"
@@ -49,10 +43,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I need contacts permission to find and call people."
         }
 
-    fun callingContact(
-        contactName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun callingContact(contactName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$contactName ko call kar raha hoon."
             LanguageHint.HINDI -> "$contactName को call कर रहा हूँ।"
@@ -60,10 +51,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "Calling $contactName."
         }
 
-    fun openingDialer(
-        contactName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun openingDialer(contactName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$contactName ke liye dialer open kar raha hoon."
             LanguageHint.HINDI -> "$contactName के लिए dialer खोल रहा हूँ।"
@@ -79,10 +67,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I couldn't find that contact on this phone."
         }
 
-    fun contactHasNoNumber(
-        contactName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun contactHasNoNumber(contactName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$contactName ke liye phone number nahi mila."
             LanguageHint.HINDI -> "$contactName के लिए phone number नहीं मिला।"
@@ -90,10 +75,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I couldn't find a phone number for $contactName."
         }
 
-    fun callLaunchFailed(
-        contactName: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun callLaunchFailed(contactName: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$contactName ke liye phone app open nahi ho paya."
             LanguageHint.HINDI -> "$contactName के लिए phone app open नहीं हो पाया।"
@@ -101,10 +83,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I couldn't open the phone app for $contactName."
         }
 
-    fun multipleContacts(
-        contactNames: List<String>,
-        languageHint: LanguageHint,
-    ): String {
+    fun multipleContacts(contactNames: List<String>, languageHint: LanguageHint): String {
         val names = contactNames.take(MAX_NAMES_IN_RESPONSE)
         val listText = joinNames(names, languageHint)
         return when (languageHint) {
@@ -161,10 +140,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I could not control the flashlight right now."
         }
 
-    fun volumePercent(
-        percent: Int,
-        languageHint: LanguageHint,
-    ): String =
+    fun volumePercent(percent: Int, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "Volume $percent percent kar raha hoon."
             LanguageHint.HINDI -> "Volume $percent percent कर रहा हूँ।"
@@ -196,10 +172,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "This device has fixed volume."
         }
 
-    fun brightnessPercent(
-        percent: Int,
-        languageHint: LanguageHint,
-    ): String =
+    fun brightnessPercent(percent: Int, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "Brightness $percent percent kar raha hoon."
             LanguageHint.HINDI -> "Brightness $percent percent कर रहा हूँ।"
@@ -231,10 +204,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I can adjust Kiko's screen brightness now. System-wide brightness needs extra permission."
         }
 
-    fun alarmSet(
-        displayTime: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun alarmSet(displayTime: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$displayTime ke liye alarm laga raha hoon."
             LanguageHint.HINDI -> "$displayTime के लिए alarm लगा रहा हूँ।"
@@ -258,11 +228,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I could not open the alarm app."
         }
 
-    fun reminderSaved(
-        displayTime: String,
-        message: String,
-        languageHint: LanguageHint,
-    ): String =
+    fun reminderSaved(displayTime: String, message: String, languageHint: LanguageHint): String =
         when (languageHint) {
             LanguageHint.HINGLISH -> "$displayTime ke liye reminder save kar diya: $message."
             LanguageHint.HINDI -> "$displayTime के लिए reminder save कर दिया: $message."
@@ -294,6 +260,70 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> " Notification permission is needed to alert you."
         }
 
+    fun rememberContactAliasPrompt(
+        contactName: String,
+        alias: String,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Kya main next time ke liye $contactName ko $alias ke naam se yaad rakhun?"
+            LanguageHint.HINDI -> "क्या मैं अगली बार के लिए $contactName को $alias के नाम से याद रखूँ?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Should I remember $contactName as $alias for next time?"
+        }
+
+    fun rememberAppAliasPrompt(
+        appName: String,
+        alias: String,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Kya main next time ke liye $appName ko $alias ke naam se yaad rakhun?"
+            LanguageHint.HINDI -> "क्या मैं अगली बार के लिए $appName को $alias के नाम से याद रखूँ?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Should I remember $appName as $alias for next time?"
+        }
+
+    fun aliasRemembered(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Theek hai, main yaad rakhunga."
+            LanguageHint.HINDI -> "ठीक है, मैं याद रखूँगा।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Okay, I will remember that."
+        }
+
+    fun aliasNotRemembered(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Theek hai, main yaad nahi rakhunga."
+            LanguageHint.HINDI -> "ठीक है, मैं याद नहीं रखूँगा।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Okay, I will not remember that."
+        }
+
+    fun unknown(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Main ye command abhi samajh nahi paya."
+            LanguageHint.HINDI -> "मैं यह command अभी समझ नहीं पाया।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I did not understand that yet."
+        }
+
+    fun internetRequired(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Kiko V1 offline kaam karta hai. Internet answers is version me use nahi honge."
+            LanguageHint.HINDI -> "Kiko V1 offline काम करता है। Internet answers इस version में use नहीं होंगे।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Kiko V1 works offline. Internet answers will not be used in this version."
+        }
+
+    fun processingFailed(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Main is request ko abhi process nahi kar paya."
+            LanguageHint.HINDI -> "मैं इस request को अभी process नहीं कर पाया।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I could not process that yet."
+        }
+
     fun clarificationRetry(
         type: PendingActionType,
         candidateNames: List<String>,
@@ -307,6 +337,13 @@ object LocalizedResponses {
                 numberLabels = candidateNames,
                 languageHint = languageHint,
             )
+            PendingActionType.REMEMBER_APP_ALIAS,
+            PendingActionType.REMEMBER_CONTACT_ALIAS -> when (languageHint) {
+                LanguageHint.HINGLISH -> "Haan ya nahi boliye."
+                LanguageHint.HINDI -> "हाँ या नहीं बोलिए।"
+                LanguageHint.ENGLISH,
+                LanguageHint.SYSTEM_DEFAULT -> "Please say yes or no."
+            }
         }
 
     fun clarificationCleared(languageHint: LanguageHint): String =
@@ -317,10 +354,7 @@ object LocalizedResponses {
             LanguageHint.SYSTEM_DEFAULT -> "I couldn't match that choice. Please say the command again."
         }
 
-    private fun joinNames(
-        names: List<String>,
-        languageHint: LanguageHint,
-    ): String {
+    private fun joinNames(names: List<String>, languageHint: LanguageHint): String {
         if (names.isEmpty()) return ""
         if (names.size == 1) return names.first()
 

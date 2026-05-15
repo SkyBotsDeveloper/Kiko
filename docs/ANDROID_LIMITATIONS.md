@@ -21,9 +21,19 @@ installed clock app.
 Kiko stores reminders locally. Reminder notification scheduling uses an inexact
 `AlarmManager` flow, so exact delivery is not guaranteed. On Android 13 and newer,
 notification permission is required before Kiko can alert the user.
+Reminder records are stored in Room and delivery status is updated when the
+notification receiver can run, but Android can still delay or suppress alarms
+based on battery, standby, OEM policy, or missing notification permission.
 
 ## Flashlight
 
 Flashlight control uses `CameraManager.setTorchMode`. Some devices may not have
 flash hardware, and the torch can be unavailable if the camera is in use or the
 OEM camera service rejects the request. Kiko handles those cases without crashing.
+
+## Local Memory
+
+Room is the primary V1 storage layer for preferences, aliases, pending
+clarifications, reminders, and optional structured summaries. Because Kiko is
+pre-release, destructive schema migration is currently enabled and documented so
+the local schema can stabilize before a public V1 build.

@@ -26,8 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -62,6 +64,7 @@ fun KikoHomeScreen(
     uiState: KikoHomeUiState,
     permissionStatuses: List<PermissionStatus>,
     onMicClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -76,7 +79,10 @@ fun KikoHomeScreen(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            KikoHeader(uiState = uiState)
+            KikoHeader(
+                uiState = uiState,
+                onSettingsClick = onSettingsClick,
+            )
 
             Column(
                 modifier = Modifier
@@ -109,19 +115,40 @@ fun KikoHomeScreen(
 }
 
 @Composable
-private fun KikoHeader(uiState: KikoHomeUiState) {
+private fun KikoHeader(
+    uiState: KikoHomeUiState,
+    onSettingsClick: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = KikoAppConfig.APP_NAME,
-            color = Color.White,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Spacer(modifier = Modifier.size(44.dp))
+            Text(
+                text = KikoAppConfig.APP_NAME,
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "Open settings",
+                    tint = KikoMutedText,
+                )
+            }
+        }
         Text(
             text = "Offline-first Android assistant by ${CreatorIdentity.NAME}",
             color = KikoMutedText,
@@ -354,6 +381,7 @@ private fun KikoHomeScreenPreview() {
                 PermissionStatus(permission = permission, isGranted = false)
             },
             onMicClick = {},
+            onSettingsClick = {},
         )
     }
 }

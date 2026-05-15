@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.skybots.kiko.R
+import com.skybots.kiko.memory.KikoDatabase
 
 class ReminderReceiver : BroadcastReceiver() {
     @SuppressLint("MissingPermission")
@@ -20,10 +21,13 @@ class ReminderReceiver : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
-        if (!canPostNotifications(context)) return
+        val reminderId = intent.getLongExtra(EXTRA_REMINDER_ID, System.currentTimeMillis())
+        if (!canPostNotifications(context)) {
+            markReminder(context, reminderId, "notification_permission_missing")
+            return
+        }
 
         val message = intent.getStringExtra(EXTRA_REMINDER_MESSAGE).orEmpty()
-        val reminderId = intent.getLongExtra(EXTRA_REMINDER_ID, System.currentTimeMillis())
         createChannel(context)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -36,6 +40,10 @@ class ReminderReceiver : BroadcastReceiver() {
 
         runCatching {
             NotificationManagerCompat.from(context).notify(reminderId.toInt(), notification)
+        }.onSuccess {
+            markReminder(context, reminderId, "delivered")
+        }.onFailure {
+            markReminder(context, reminderId, "notification_failed")
         }
     }
 
@@ -56,6 +64,22 @@ class ReminderReceiver : BroadcastReceiver() {
         )
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
+    }
+
+    private fun markReminder(
+        context: Context,
+        reminderId: Long,
+        deliveryStatus: String,
+    ) {
+        val pendingResult = goAsync()
+        Thread {
+            runCatching {
+                KikoDatabase.create(context)
+                    .reminderDao()
+                    .markDelivered(reminderId, deliveryStatus)
+            }
+            pendingResult.finish()
+        }.start()
     }
 
     companion object {

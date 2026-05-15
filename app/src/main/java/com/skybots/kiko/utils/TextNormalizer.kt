@@ -3,7 +3,7 @@ package com.skybots.kiko.utils
 import java.util.Locale
 
 object TextNormalizer {
-    private val punctuationRegex = Regex("[^\\p{L}\\p{N}\\s]")
+    private val punctuationRegex = Regex("[^\\p{L}\\p{M}\\p{N}\\s]")
     private val whitespaceRegex = Regex("\\s+")
 
     fun normalize(value: String): String =

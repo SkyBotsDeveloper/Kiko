@@ -1,6 +1,7 @@
 package com.skybots.kiko.assistant.clarification
 
 import com.skybots.kiko.assistant.language.LanguageHint
+import com.skybots.kiko.memory.MemoryRepository
 import com.skybots.kiko.utils.TextNormalizer
 import kotlin.math.max
 
@@ -8,6 +9,7 @@ class ClarificationManager(
     private val clockMillis: () -> Long = { System.currentTimeMillis() },
     private val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     private val maxFailures: Int = DEFAULT_MAX_FAILURES,
+    private val memoryRepository: MemoryRepository? = null,
 ) {
     private var pendingAction: PendingAction? = null
 
@@ -15,17 +17,20 @@ class ClarificationManager(
         type: PendingActionType,
         candidates: List<ClarificationCandidate>,
         languageHint: LanguageHint,
+        originalQuery: String? = null,
     ) {
         pendingAction = PendingAction(
             type = type,
             candidates = candidates,
             languageHint = languageHint,
             createdAtMillis = clockMillis(),
+            originalQuery = originalQuery,
         )
+        persistPending()
     }
 
     fun resolve(transcript: String): ClarificationResolution {
-        val pending = pendingAction ?: return ClarificationResolution.NoPending
+        val pending = pendingAction ?: restorePendingAction() ?: return ClarificationResolution.NoPending
         if (clockMillis() - pending.createdAtMillis > timeoutMillis) {
             clear()
             return ClarificationResolution.Expired
@@ -50,6 +55,7 @@ class ClarificationManager(
         }
 
         pendingAction = nextPending
+        persistPending()
         return ClarificationResolution.Retry(
             pendingAction = nextPending,
             cleared = false,
@@ -58,9 +64,44 @@ class ClarificationManager(
 
     fun clear() {
         pendingAction = null
+        memoryRepository?.clearPendingAction()
     }
 
-    fun hasPending(): Boolean = pendingAction != null
+    fun hasPending(): Boolean = currentPendingAction() != null
+
+    fun currentPendingAction(): PendingAction? {
+        val inMemory = pendingAction
+        if (inMemory != null) {
+            if (clockMillis() - inMemory.createdAtMillis <= timeoutMillis) return inMemory
+            clear()
+            return null
+        }
+
+        val restored = restorePendingAction()
+        if (restored != null && clockMillis() - restored.createdAtMillis <= timeoutMillis) {
+            pendingAction = restored
+            return restored
+        }
+
+        if (restored != null) clear()
+        return null
+    }
+
+    private fun restorePendingAction(): PendingAction? =
+        memoryRepository
+            ?.getActivePendingAction(clockMillis())
+            ?.let(PendingActionCodec::decode)
+            ?.also { pendingAction = it }
+
+    private fun persistPending() {
+        val pending = pendingAction ?: return
+        memoryRepository?.savePendingAction(
+            PendingActionCodec.encode(
+                pendingAction = pending,
+                expiresAtMillis = pending.createdAtMillis + timeoutMillis,
+            ),
+        )
+    }
 
     private fun findCandidate(
         transcript: String,

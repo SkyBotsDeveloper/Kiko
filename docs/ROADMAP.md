@@ -4,7 +4,13 @@
 
 Build the local assistant loop for manual voice input, Android TTS responses,
 local intent parsing, clarification handling, app/contact actions, basic device
-controls, local memory, language mirroring, and creator identity knowledge.
+controls, Room-backed local memory, settings, language preferences, and creator
+identity knowledge.
+
+Current V1 progress includes manual SpeechRecognizer input, Android TTS, app
+opening, contact call/dial flows, device controls, reminder storage, persisted
+clarification state, approved alias learning, and local JSON memory
+export/import. V1 remains offline-first with no login, API keys, or cloud AI.
 
 ## V2: Hey Kiko wake word
 

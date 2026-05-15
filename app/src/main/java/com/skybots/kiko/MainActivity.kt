@@ -2,7 +2,10 @@ package com.skybots.kiko
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -34,15 +37,19 @@ import com.skybots.kiko.actions.device.FlashlightActionHandler
 import com.skybots.kiko.actions.device.RealDeviceActionHandler
 import com.skybots.kiko.actions.device.ReminderActionHandler
 import com.skybots.kiko.actions.device.ReminderParser
-import com.skybots.kiko.actions.device.SharedPreferencesReminderRepository
 import com.skybots.kiko.actions.device.VolumeActionHandler
 import com.skybots.kiko.assistant.AssistantOrchestrator
 import com.skybots.kiko.assistant.AssistantRuntimeState
 import com.skybots.kiko.assistant.clarification.ClarificationManager
+import com.skybots.kiko.assistant.language.LanguageStyle
+import com.skybots.kiko.assistant.language.ReplyStyle
+import com.skybots.kiko.memory.KikoDatabase
+import com.skybots.kiko.memory.RoomMemoryRepository
 import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.ui.KikoHomeScreen
 import com.skybots.kiko.ui.KikoHomeUiState
+import com.skybots.kiko.ui.KikoSettingsScreen
 import com.skybots.kiko.ui.theme.KikoTheme
 import com.skybots.kiko.voice.SpeechRecognizerManager
 import com.skybots.kiko.voice.TtsManager
@@ -67,8 +74,11 @@ private fun KikoApp() {
     val permissionManager = remember(context) {
         PermissionManager(context)
     }
-    val clarificationManager = remember {
-        ClarificationManager()
+    val memoryRepository = remember(context) {
+        RoomMemoryRepository(KikoDatabase.create(context))
+    }
+    val clarificationManager = remember(memoryRepository) {
+        ClarificationManager(memoryRepository = memoryRepository)
     }
     val contactsRepository = remember(context) {
         AndroidContactsRepository(
@@ -83,6 +93,7 @@ private fun KikoApp() {
                 appMatcher = AppMatcher(),
                 appLauncher = AndroidAppLauncher(context),
                 clarificationManager = clarificationManager,
+                memoryRepository = memoryRepository,
             ),
             contactActionHandler = RealContactActionHandler(
                 contactsRepository = contactsRepository,
@@ -90,6 +101,7 @@ private fun KikoApp() {
                 permissionChecker = permissionManager,
                 phoneActionLauncher = AndroidPhoneActionLauncher(context),
                 clarificationManager = clarificationManager,
+                memoryRepository = memoryRepository,
             ),
             deviceActionHandler = RealDeviceActionHandler(
                 flashlightActionHandler = FlashlightActionHandler(
@@ -107,7 +119,7 @@ private fun KikoApp() {
                 ),
                 reminderActionHandler = ReminderActionHandler(
                     reminderParser = ReminderParser(),
-                    reminderRepository = SharedPreferencesReminderRepository(context),
+                    reminderRepository = memoryRepository,
                     reminderScheduler = AndroidLocalReminderScheduler(
                         context = context,
                         permissionChecker = permissionManager,
@@ -115,6 +127,7 @@ private fun KikoApp() {
                 ),
             ),
             clarificationManager = clarificationManager,
+            memoryRepository = memoryRepository,
         )
     }
 
@@ -124,9 +137,33 @@ private fun KikoApp() {
     var uiState by remember {
         mutableStateOf(KikoHomeUiState())
     }
+    var preferences by remember {
+        mutableStateOf(memoryRepository.getUserPreferences())
+    }
+    var showSettings by remember {
+        mutableStateOf(false)
+    }
+    var exportedMemoryJson by remember {
+        mutableStateOf("")
+    }
+    var importMemoryJson by remember {
+        mutableStateOf("")
+    }
+    var systemBrightnessControlAllowed by remember {
+        mutableStateOf(Settings.System.canWrite(context))
+    }
 
     fun refreshPermissionStatuses() {
         permissionStatuses = permissionManager.getPermissionStatuses()
+    }
+
+    fun refreshPreferences() {
+        preferences = memoryRepository.getUserPreferences()
+    }
+
+    fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {
+        memoryRepository.updateUserPreferences(transform(preferences))
+        refreshPreferences()
     }
 
     val ttsManager = remember(context) {
@@ -226,7 +263,10 @@ private fun KikoApp() {
             },
             statusMessage = result.errorMessage ?: "Response ready.",
         )
-        ttsManager.speak(result.response, result.intent.languageHint)
+        refreshPreferences()
+        if (memoryRepository.getUserPreferences().voiceEnabled) {
+            ttsManager.speak(result.response, result.intent.languageHint)
+        }
         requestActionPermission(result.requestedPermission)
     }
 
@@ -280,17 +320,88 @@ private fun KikoApp() {
         }
     }
 
-    KikoHomeScreen(
-        uiState = uiState,
-        permissionStatuses = permissionStatuses,
-        onMicClick = {
-            refreshPermissionStatuses()
-            if (permissionManager.hasRecordAudioPermission()) {
-                ttsManager.stop()
-                speechRecognizerManager.startListening()
-            } else {
-                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
-        },
-    )
+    if (showSettings) {
+        KikoSettingsScreen(
+            preferences = preferences,
+            permissionStatuses = permissionStatuses,
+            exportedJson = exportedMemoryJson,
+            importJson = importMemoryJson,
+            systemBrightnessControlAllowed = systemBrightnessControlAllowed,
+            onBackClick = {
+                refreshPermissionStatuses()
+                systemBrightnessControlAllowed = Settings.System.canWrite(context)
+                showSettings = false
+            },
+            onVoiceEnabledChange = { enabled ->
+                updatePreferences { it.copy(voiceEnabled = enabled) }
+            },
+            onLanguageStyleChange = { style: LanguageStyle ->
+                updatePreferences { it.copy(preferredLanguageStyle = style.name) }
+            },
+            onReplyStyleChange = { style: ReplyStyle ->
+                updatePreferences { it.copy(replyStyle = style.name) }
+            },
+            onPersonalizationEnabledChange = { enabled ->
+                updatePreferences { it.copy(personalizationEnabled = enabled) }
+            },
+            onSaveInteractionSummariesChange = { enabled ->
+                updatePreferences { it.copy(saveInteractionSummaries = enabled) }
+            },
+            onClearMemoryClick = {
+                memoryRepository.clearAllMemory()
+                clarificationManager.clear()
+                exportedMemoryJson = ""
+                importMemoryJson = ""
+                uiState = uiState.copy(statusMessage = "Local memory cleared.")
+            },
+            onExportMemoryClick = {
+                exportedMemoryJson = memoryRepository.exportMemoryJson()
+                uiState = uiState.copy(statusMessage = "Memory JSON exported locally.")
+            },
+            onImportJsonChange = { importMemoryJson = it },
+            onImportMemoryClick = {
+                runCatching {
+                    memoryRepository.importMemoryJson(importMemoryJson)
+                    refreshPreferences()
+                    exportedMemoryJson = ""
+                    uiState = uiState.copy(statusMessage = "Memory JSON imported.")
+                }.getOrElse { error ->
+                    uiState = uiState.copy(
+                        runtimeState = AssistantRuntimeState.ERROR,
+                        statusMessage = error.message ?: "Memory import failed.",
+                    )
+                }
+            },
+            onAllowBrightnessControlClick = {
+                runCatching {
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                            Uri.parse("package:${context.packageName}"),
+                        ),
+                    )
+                }
+            },
+        )
+    } else {
+        KikoHomeScreen(
+            uiState = uiState,
+            permissionStatuses = permissionStatuses,
+            onMicClick = {
+                refreshPermissionStatuses()
+                if (permissionManager.hasRecordAudioPermission()) {
+                    ttsManager.stop()
+                    speechRecognizerManager.startListening()
+                } else {
+                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
+            onSettingsClick = {
+                refreshPreferences()
+                refreshPermissionStatuses()
+                systemBrightnessControlAllowed = Settings.System.canWrite(context)
+                showSettings = true
+            },
+        )
+    }
 }

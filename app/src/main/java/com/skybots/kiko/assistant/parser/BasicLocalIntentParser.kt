@@ -6,7 +6,7 @@ import com.skybots.kiko.utils.TextNormalizer
 class BasicLocalIntentParser : IntentParser {
     override fun parse(text: String): AssistantIntent {
         val normalized = TextNormalizer.normalize(text)
-        val languageHint = detectLanguageHint(normalized)
+        val languageHint = detectLanguageHint(text)
 
         if (normalized.isBlank()) {
             return AssistantIntent(
@@ -24,8 +24,7 @@ class BasicLocalIntentParser : IntentParser {
             )
         }
 
-        val appQuery = extractAppQuery(normalized)
-        if (appQuery != null) {
+        extractAppQuery(normalized)?.let { appQuery ->
             return AssistantIntent(
                 type = IntentType.OPEN_APP,
                 rawText = text,
@@ -35,8 +34,7 @@ class BasicLocalIntentParser : IntentParser {
             )
         }
 
-        val contactQuery = extractContactQuery(normalized)
-        if (contactQuery != null) {
+        extractContactQuery(normalized)?.let { contactQuery ->
             return AssistantIntent(
                 type = IntentType.CALL_CONTACT,
                 rawText = text,
@@ -70,16 +68,14 @@ class BasicLocalIntentParser : IntentParser {
         text: String,
         languageHint: LanguageHint,
     ): AssistantIntent? {
-        if (!containsAny(text, flashlightTokens)) return null
-
-        val type = if (containsAny(text, offTokens)) {
-            IntentType.FLASHLIGHT_OFF
-        } else {
-            IntentType.FLASHLIGHT_ON
-        }
+        if (!containsAny(text, FLASHLIGHT_TOKENS)) return null
 
         return AssistantIntent(
-            type = type,
+            type = if (containsAny(text, OFF_TOKENS)) {
+                IntentType.FLASHLIGHT_OFF
+            } else {
+                IntentType.FLASHLIGHT_ON
+            },
             rawText = rawText,
             languageHint = languageHint,
         )
@@ -90,7 +86,7 @@ class BasicLocalIntentParser : IntentParser {
         text: String,
         languageHint: LanguageHint,
     ): AssistantIntent? {
-        if (!containsAny(text, volumeTokens)) return null
+        if (!containsAny(text, VOLUME_TOKENS)) return null
 
         return AssistantIntent(
             type = IntentType.SET_VOLUME,
@@ -106,7 +102,7 @@ class BasicLocalIntentParser : IntentParser {
         text: String,
         languageHint: LanguageHint,
     ): AssistantIntent? {
-        if (!containsAny(text, brightnessTokens)) return null
+        if (!containsAny(text, BRIGHTNESS_TOKENS)) return null
 
         return AssistantIntent(
             type = IntentType.SET_BRIGHTNESS,
@@ -122,7 +118,7 @@ class BasicLocalIntentParser : IntentParser {
         text: String,
         languageHint: LanguageHint,
     ): AssistantIntent? {
-        if (!containsAny(text, alarmTokens)) return null
+        if (!containsAny(text, ALARM_TOKENS)) return null
 
         return AssistantIntent(
             type = IntentType.SET_ALARM,
@@ -136,7 +132,7 @@ class BasicLocalIntentParser : IntentParser {
         text: String,
         languageHint: LanguageHint,
     ): AssistantIntent? {
-        if (!containsAny(text, reminderTokens)) return null
+        if (!containsAny(text, REMINDER_TOKENS)) return null
 
         return AssistantIntent(
             type = IntentType.SET_REMINDER,
@@ -149,14 +145,15 @@ class BasicLocalIntentParser : IntentParser {
         text.contains("who created you") ||
             text.contains("who made you") ||
             text.contains("tumhe kisne banaya") ||
-            text.contains("kisne banaya")
+            text.contains("kisne banaya") ||
+            text.contains(HINDI_CREATOR_QUESTION)
 
     private fun extractAppQuery(text: String): String? {
         val tokens = TextNormalizer.tokens(text)
-        if (tokens.none { it in appTriggerTokens }) return null
+        if (tokens.none { it in APP_TRIGGER_TOKENS }) return null
 
         val query = tokens
-            .filterNot { it in appCommandTokens }
+            .filterNot { it in APP_COMMAND_TOKENS }
             .joinToString(" ")
             .trim()
 
@@ -165,10 +162,10 @@ class BasicLocalIntentParser : IntentParser {
 
     private fun extractContactQuery(text: String): String? {
         val tokens = TextNormalizer.tokens(text)
-        if (tokens.none { it in callTriggerTokens }) return null
+        if (tokens.none { it in CALL_TRIGGER_TOKENS }) return null
 
         val query = tokens
-            .filterNot { it in callCommandTokens }
+            .filterNot { it in CALL_COMMAND_TOKENS }
             .joinToString(" ")
             .trim()
 
@@ -176,15 +173,15 @@ class BasicLocalIntentParser : IntentParser {
     }
 
     private fun extractPercent(text: String): Int? =
-        numberRegex.find(text)
+        NUMBER_REGEX.find(text)
             ?.value
             ?.toIntOrNull()
             ?.coerceIn(0, 100)
 
     private fun extractAdjustmentDirection(text: String): AdjustmentDirection? =
         when {
-            containsAny(text, increaseTokens) -> AdjustmentDirection.INCREASE
-            containsAny(text, decreaseTokens) -> AdjustmentDirection.DECREASE
+            containsAny(text, INCREASE_TOKENS) -> AdjustmentDirection.INCREASE
+            containsAny(text, DECREASE_TOKENS) -> AdjustmentDirection.DECREASE
             else -> null
         }
 
@@ -198,38 +195,22 @@ class BasicLocalIntentParser : IntentParser {
         }
     }
 
-    private fun detectLanguageHint(text: String): LanguageHint =
-        if (TextNormalizer.containsDevanagari(text)) {
+    private fun detectLanguageHint(text: String): LanguageHint {
+        val normalized = TextNormalizer.normalize(text)
+        return if (TextNormalizer.containsDevanagari(text)) {
             LanguageHint.HINDI
         } else if (
-            text.contains("tumhe") ||
-            text.contains("kisne") ||
-            text.contains("banaya") ||
-            text.contains("mujhe") ||
-            text.contains("kholo") ||
-            text.contains("khol") ||
-            text.contains("karo") ||
-            text.contains("lagao") ||
-            text.contains("baje") ||
-            text.contains("yaad") ||
-            text.contains("badhao") ||
-            text.contains("kam")
+            HINGLISH_LANGUAGE_TOKENS.any { normalized.contains(it) }
         ) {
             LanguageHint.HINGLISH
         } else {
             LanguageHint.ENGLISH
         }
+    }
 
     private companion object {
-        val appTriggerTokens = setOf(
-            "open",
-            "khol",
-            "kholo",
-            "खोलो",
-            "खोल",
-        )
-
-        val appCommandTokens = setOf(
+        val APP_TRIGGER_TOKENS = setOf("open", "khol", "kholo", "खोलो", "खोल")
+        val APP_COMMAND_TOKENS = setOf(
             "open",
             "khol",
             "kholo",
@@ -240,20 +221,11 @@ class BasicLocalIntentParser : IntentParser {
             "application",
             "खोलो",
             "खोल",
+            "करो",
         )
 
-        val callTriggerTokens = setOf(
-            "call",
-            "phone",
-            "dial",
-            "lagao",
-            "lagaao",
-            "lagana",
-            "कॉल",
-            "फोन",
-        )
-
-        val callCommandTokens = setOf(
+        val CALL_TRIGGER_TOKENS = setOf("call", "phone", "dial", "lagao", "lagaao", "lagana", "कॉल", "फोन")
+        val CALL_COMMAND_TOKENS = setOf(
             "call",
             "phone",
             "dial",
@@ -269,58 +241,29 @@ class BasicLocalIntentParser : IntentParser {
             "करो",
         )
 
-        val flashlightTokens = setOf(
-            "flashlight",
-            "torch",
-            "टॉर्च",
-        )
-
-        val offTokens = setOf(
-            "off",
-            "band",
-            "बंद",
-        )
-
-        val volumeTokens = setOf(
-            "volume",
-            "awaz",
-            "आवाज",
-            "आवाज़",
-        )
-
-        val brightnessTokens = setOf(
-            "brightness",
-            "ब्राइटनेस",
-        )
-
-        val alarmTokens = setOf(
-            "alarm",
-            "अलार्म",
-        )
-
-        val reminderTokens = setOf(
-            "remind",
-            "reminder",
+        val FLASHLIGHT_TOKENS = setOf("flashlight", "torch", "टॉर्च")
+        val OFF_TOKENS = setOf("off", "band", "बंद")
+        val VOLUME_TOKENS = setOf("volume", "awaz", "आवाज", "आवाज़")
+        val BRIGHTNESS_TOKENS = setOf("brightness", "ब्राइटनेस")
+        val ALARM_TOKENS = setOf("alarm", "अलार्म")
+        val REMINDER_TOKENS = setOf("remind", "reminder", "yaad", "याद")
+        val INCREASE_TOKENS = setOf("badhao", "increase", "up", "बढ़ाओ", "बढ़ाओ")
+        val DECREASE_TOKENS = setOf("kam", "decrease", "down", "lower", "कम")
+        val HINGLISH_LANGUAGE_TOKENS = setOf(
+            "tumhe",
+            "kisne",
+            "banaya",
+            "mujhe",
+            "kholo",
+            "khol",
+            "karo",
+            "lagao",
+            "baje",
             "yaad",
-            "याद",
-        )
-
-        val increaseTokens = setOf(
             "badhao",
-            "increase",
-            "up",
-            "बढ़ाओ",
-            "बढ़ाओ",
-        )
-
-        val decreaseTokens = setOf(
             "kam",
-            "decrease",
-            "down",
-            "lower",
-            "कम",
         )
-
-        val numberRegex = Regex("\\b\\d{1,3}\\b")
+        val NUMBER_REGEX = Regex("\\b\\d{1,3}\\b")
+        const val HINDI_CREATOR_QUESTION = "\u0915\u093f\u0938\u0928\u0947 \u092c\u0928\u093e\u092f\u093e"
     }
 }

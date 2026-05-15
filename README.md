@@ -19,8 +19,8 @@ needed, speak responses with Android TTS, and run basic Android actions.
 
 ## Current phase status
 
-This branch contains the initial Android scaffold plus the Phase 2 V1 assistant
-foundation:
+This branch contains the Android scaffold plus the V1 assistant foundation
+through Phase 5:
 
 - Kotlin Android app
 - Jetpack Compose UI
@@ -38,11 +38,19 @@ foundation:
 - Permission-aware contact flow with no cloud dependency
 - Offline device actions for flashlight, volume, brightness, alarms, and reminders
 - Multi-number contact clarification for contacts with more than one phone number
+- Room-backed local memory for preferences, aliases, pending actions, reminders,
+  and optional structured interaction summaries
+- Settings UI for voice replies, language preference, reply style,
+  personalization, memory clear/export/import, and creator/about details
+- Persisted clarification outcomes so approved app/contact aliases can be reused
+- Local JSON export/import for user-controlled memory backup
+- Privacy documentation covering local-first storage and V1 no-cloud behavior
 
-Future behavior such as richer local memory, more device controls, and better
-language mirroring will be expanded across later phases. Wake word detection,
-Accessibility Service automation, cloud AI, login, and API keys are not part of
-V1 scaffold work.
+See `docs/PRIVACY.md` and `docs/ANDROID_LIMITATIONS.md` for storage and Android
+platform constraints.
+
+Wake word detection, Accessibility Service automation, cloud AI, login, and API
+keys are not part of V1 scaffold work.
 
 ## Build instructions
 

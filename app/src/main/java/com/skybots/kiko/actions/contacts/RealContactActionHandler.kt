@@ -7,6 +7,7 @@ import com.skybots.kiko.assistant.clarification.PendingActionType
 import com.skybots.kiko.assistant.language.LanguageHint
 import com.skybots.kiko.assistant.language.LocalizedResponses
 import com.skybots.kiko.assistant.parser.AssistantIntent
+import com.skybots.kiko.memory.MemoryRepository
 import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionChecker
 
@@ -16,6 +17,7 @@ class RealContactActionHandler(
     private val permissionChecker: PermissionChecker,
     private val phoneActionLauncher: PhoneActionLauncher,
     private val clarificationManager: ClarificationManager,
+    private val memoryRepository: MemoryRepository? = null,
 ) : ContactActionHandler {
     override fun handle(intent: AssistantIntent): AssistantActionResult {
         if (!permissionChecker.hasReadContactsPermission()) {
@@ -26,8 +28,17 @@ class RealContactActionHandler(
         }
 
         val query = intent.contactQuery ?: intent.target ?: intent.rawText
-        return when (val match = contactMatcher.match(query, contactsRepository.getContacts())) {
-            is ContactMatchResult.Single -> startCallOrDial(match.contact, intent.languageHint)
+        val contacts = contactsRepository.getContacts()
+        findRememberedContact(query, contacts)?.let { contact ->
+            return startCallOrDial(contact, intent.languageHint, originalQuery = query)
+        }
+
+        return when (val match = contactMatcher.match(query, contacts)) {
+            is ContactMatchResult.Single -> startCallOrDial(
+                contact = match.contact,
+                languageHint = intent.languageHint,
+                originalQuery = query,
+            )
             is ContactMatchResult.Multiple -> {
                 clarificationManager.setPending(
                     type = PendingActionType.CALL_CONTACT,
@@ -39,6 +50,7 @@ class RealContactActionHandler(
                         )
                     },
                     languageHint = intent.languageHint,
+                    originalQuery = query,
                 )
                 AssistantActionResult(
                     response = LocalizedResponses.multipleContacts(
@@ -99,9 +111,10 @@ class RealContactActionHandler(
     private fun startCallOrDial(
         contact: ContactModel,
         languageHint: LanguageHint,
+        originalQuery: String? = null,
     ): AssistantActionResult {
         if (contact.phoneNumbers.size > 1) {
-            return askWhichNumber(contact, languageHint)
+            return askWhichNumber(contact, languageHint, originalQuery)
         }
 
         val number = contact.primaryNumber()
@@ -139,6 +152,7 @@ class RealContactActionHandler(
     private fun askWhichNumber(
         contact: ContactModel,
         languageHint: LanguageHint,
+        originalQuery: String? = null,
     ): AssistantActionResult {
         val candidates = contact.phoneNumbers.mapIndexed { index, phoneNumber ->
             val label = phoneNumber.label?.takeIf { it.isNotBlank() } ?: "Number ${index + 1}"
@@ -157,6 +171,7 @@ class RealContactActionHandler(
             type = PendingActionType.CALL_CONTACT_NUMBER,
             candidates = candidates,
             languageHint = languageHint,
+            originalQuery = originalQuery,
         )
 
         return AssistantActionResult(
@@ -168,6 +183,27 @@ class RealContactActionHandler(
                 languageHint = languageHint,
             ),
         )
+    }
+
+    private fun findRememberedContact(
+        query: String,
+        contacts: List<ContactModel>,
+    ): ContactModel? {
+        val memory = memoryRepository ?: return null
+        if (!memory.isPersonalizationEnabled()) return null
+
+        val alias = memory.findContactAlias(query) ?: return null
+        return contacts.firstOrNull { contact ->
+            contact.displayName == alias.contactName &&
+                contact.phoneNumbers.any { it.number == alias.phoneNumber }
+        }?.let { contact ->
+            contact.copy(
+                phoneNumbers = contact.phoneNumbers.filter { it.number == alias.phoneNumber }
+                    .ifEmpty {
+                        listOf(ContactPhoneNumber(number = alias.phoneNumber, label = alias.label))
+                    },
+            )
+        }
     }
 
     private data class PhoneNumberSelection(
