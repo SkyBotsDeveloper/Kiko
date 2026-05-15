@@ -8,6 +8,7 @@ import com.skybots.kiko.assistant.language.LanguageHint
 import com.skybots.kiko.assistant.language.LocalizedResponses
 import com.skybots.kiko.assistant.parser.AssistantIntent
 import com.skybots.kiko.memory.MemoryRepository
+import com.skybots.kiko.utils.DiagnosticsLogger
 
 class RealAppActionHandler(
     private val installedAppRepository: InstalledAppRepository,
@@ -63,8 +64,10 @@ class RealAppActionHandler(
     private fun openApp(
         app: InstalledApp,
         languageHint: LanguageHint,
-    ): AssistantActionResult =
-        if (appLauncher.launch(app.packageName)) {
+    ): AssistantActionResult {
+        val launched = appLauncher.launch(app.packageName)
+        DiagnosticsLogger.actionOutcome("open_app", launched)
+        return if (launched) {
             AssistantActionResult(
                 response = LocalizedResponses.openingApp(app.label, languageHint),
             )
@@ -73,6 +76,7 @@ class RealAppActionHandler(
                 response = LocalizedResponses.appLaunchFailed(app.label, languageHint),
             )
         }
+    }
 
     private fun findRememberedApp(
         query: String,

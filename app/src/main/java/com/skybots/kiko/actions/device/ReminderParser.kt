@@ -7,10 +7,11 @@ class ReminderParser(
 ) {
     fun parse(text: String): ReminderRequest {
         val normalized = TextNormalizer.normalize(text)
+        val alarmTime = alarmParser.parse(text)
         return ReminderRequest(
-            alarmTime = alarmParser.parse(text),
+            alarmTime = alarmTime,
             message = extractMessage(text, normalized),
-            dayOffset = if (normalized.contains("kal") || normalized.contains("कल")) 1 else 0,
+            dayOffset = alarmTime?.dayOffset ?: alarmParser.dayOffset(text),
         )
     }
 
@@ -18,17 +19,13 @@ class ReminderParser(
         rawText: String,
         normalized: String,
     ): String? {
-        val englishMessage = englishToRegex.find(rawText)
+        val englishMessage = ENGLISH_TO_REGEX.find(rawText)
             ?.groupValues
             ?.getOrNull(1)
             ?.trim()
         if (!englishMessage.isNullOrBlank()) return englishMessage.trimEnd('.', ',', ' ')
 
-        if (normalized.contains("yaad")) {
-            return extractBeforeYaad(normalized)
-        }
-
-        if (normalized.contains("याद")) {
+        if (normalized.contains("yaad") || normalized.contains(HINDI_YAAD)) {
             return extractBeforeYaad(normalized)
         }
 
@@ -38,9 +35,9 @@ class ReminderParser(
     private fun extractBeforeYaad(normalized: String): String? {
         val beforeYaad = normalized
             .substringBefore("yaad")
-            .substringBefore("याद")
+            .substringBefore(HINDI_YAAD)
         val message = TextNormalizer.tokens(beforeYaad)
-            .filterNot { token -> token in fillerTokens || token.toIntOrNull() != null }
+            .filterNot { token -> token in FILLER_TOKENS || token.toIntOrNull() != null }
             .joinToString(" ")
             .trim()
 
@@ -48,9 +45,10 @@ class ReminderParser(
     }
 
     private companion object {
-        val englishToRegex = Regex("\\bto\\s+(.+)$", RegexOption.IGNORE_CASE)
+        val ENGLISH_TO_REGEX = Regex("\\bto\\s+(.+)$", RegexOption.IGNORE_CASE)
+        const val HINDI_YAAD = "\u092f\u093e\u0926"
 
-        val fillerTokens = setOf(
+        val FILLER_TOKENS = setOf(
             "remind",
             "reminder",
             "me",
@@ -60,7 +58,11 @@ class ReminderParser(
             "pm",
             "am",
             "kal",
+            "aaj",
+            "today",
+            "tomorrow",
             "subah",
+            "dopahar",
             "raat",
             "shaam",
             "sham",
@@ -68,9 +70,15 @@ class ReminderParser(
             "lagao",
             "dilana",
             "do",
-            "मुझे",
-            "बजे",
-            "कल",
+            "\u092e\u0941\u091d\u0947",
+            "\u092c\u091c\u0947",
+            "\u0915\u0932",
+            "\u0906\u091c",
+            "\u0938\u0941\u092c\u0939",
+            "\u0926\u094b\u092a\u0939\u0930",
+            "\u0930\u093e\u0924",
+            "\u0936\u093e\u092e",
+            "\u0926\u093f\u0932\u093e\u0928\u093e",
         )
     }
 }

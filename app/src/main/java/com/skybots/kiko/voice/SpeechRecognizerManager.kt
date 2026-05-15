@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.skybots.kiko.utils.DiagnosticsLogger
 import java.util.Locale
 
 class SpeechRecognizerManager(
@@ -45,6 +46,7 @@ class SpeechRecognizerManager(
 
         try {
             isListening = true
+            DiagnosticsLogger.voiceStart()
             onStateChange(VoiceInputState.Listening)
             speechRecognizer.startListening(intent)
         } catch (error: RuntimeException) {
@@ -114,6 +116,7 @@ class SpeechRecognizerManager(
                 if (transcript.isBlank()) {
                     onStateChange(VoiceInputState.Error("I did not catch that."))
                 } else {
+                    DiagnosticsLogger.voiceResult(transcript)
                     onFinalResult(transcript)
                 }
             }

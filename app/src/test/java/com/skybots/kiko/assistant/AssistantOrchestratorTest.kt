@@ -98,6 +98,28 @@ class AssistantOrchestratorTest {
     }
 
     @Test
+    fun cancelPhraseClearsPendingClarification() {
+        val clarificationManager = ClarificationManager()
+        clarificationManager.setPending(
+            type = PendingActionType.OPEN_APP,
+            candidates = listOf(
+                ClarificationCandidate(id = "telegram", label = "Telegram"),
+                ClarificationCandidate(id = "telegram-x", label = "Telegram X"),
+            ),
+            languageHint = LanguageHint.HINGLISH,
+        )
+        val orchestrator = AssistantOrchestrator(
+            intentParser = BasicLocalIntentParser(),
+            clarificationManager = clarificationManager,
+        )
+
+        val result = orchestrator.processTranscript("rehne do")
+
+        assertTrue(result.response.contains("cancel"))
+        assertTrue(!clarificationManager.hasPending())
+    }
+
+    @Test
     fun deviceIntentRoutesToDeviceHandler() {
         val orchestrator = AssistantOrchestrator(
             intentParser = BasicLocalIntentParser(),

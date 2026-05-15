@@ -10,6 +10,7 @@ import com.skybots.kiko.assistant.parser.AssistantIntent
 import com.skybots.kiko.memory.MemoryRepository
 import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionChecker
+import com.skybots.kiko.utils.DiagnosticsLogger
 
 class RealContactActionHandler(
     private val contactsRepository: ContactsRepository,
@@ -129,11 +130,13 @@ class RealContactActionHandler(
         }
 
         if (!launched) {
+            DiagnosticsLogger.actionOutcome("contact_call_or_dial", false)
             return AssistantActionResult(
                 response = LocalizedResponses.callLaunchFailed(contact.displayName, languageHint),
             )
         }
 
+        DiagnosticsLogger.actionOutcome("contact_call_or_dial", true)
         return AssistantActionResult(
             response = if (permissionChecker.hasCallPhonePermission()) {
                 LocalizedResponses.callingContact(contact.displayName, languageHint)

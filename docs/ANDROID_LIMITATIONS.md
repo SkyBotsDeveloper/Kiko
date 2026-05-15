@@ -15,6 +15,8 @@ fallback and tells the user that full phone brightness needs extra permission.
 Basic alarm creation uses Android's `AlarmClock` intent. This avoids exact-alarm
 permission for the V1 flow, but the final UI and behavior depend on the device's
 installed clock app.
+Kiko can parse common local phrases such as `kal subah 6 baje`, but the
+AlarmClock app ultimately decides how the alarm is created and displayed.
 
 ## Reminders
 
@@ -37,3 +39,10 @@ Room is the primary V1 storage layer for preferences, aliases, pending
 clarifications, reminders, and optional structured summaries. Because Kiko is
 pre-release, destructive schema migration is currently enabled and documented so
 the local schema can stabilize before a public V1 build.
+
+## Diagnostics
+
+Diagnostics are written to local Logcat only. They are intended for debugging
+voice start/results, parser intent type, action routing, permission gaps,
+reminder scheduling/storage, and TTS state. Kiko does not send diagnostics to a
+server in V1.

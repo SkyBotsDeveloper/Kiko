@@ -6,6 +6,7 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.skybots.kiko.assistant.language.LanguageHint
+import com.skybots.kiko.utils.DiagnosticsLogger
 import java.util.Locale
 
 class TtsManager(
@@ -67,8 +68,10 @@ class TtsManager(
         )
 
         if (result == TextToSpeech.ERROR) {
+            DiagnosticsLogger.ttsFailure("speak returned error")
             emit(VoiceOutputState.Error("Could not speak the response."))
         } else {
+            DiagnosticsLogger.ttsSpeakStart()
             emit(VoiceOutputState.Speaking)
         }
     }

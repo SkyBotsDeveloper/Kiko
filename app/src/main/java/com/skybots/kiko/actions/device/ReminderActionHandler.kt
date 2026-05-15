@@ -4,6 +4,7 @@ import com.skybots.kiko.actions.AssistantActionResult
 import com.skybots.kiko.assistant.language.LocalizedResponses
 import com.skybots.kiko.assistant.parser.AssistantIntent
 import com.skybots.kiko.permissions.KikoPermission
+import com.skybots.kiko.utils.DiagnosticsLogger
 import java.util.Calendar
 
 class ReminderActionHandler(
@@ -33,16 +34,26 @@ class ReminderActionHandler(
         val baseResponse = LocalizedResponses.reminderSaved(
             displayTime = alarmTime.displayText,
             message = message,
+            dayOffset = request.dayOffset,
             languageHint = intent.languageHint,
         )
 
         return when (reminderScheduler.schedule(reminder)) {
-            ReminderScheduleResult.Scheduled -> AssistantActionResult(response = baseResponse)
-            ReminderScheduleResult.NotificationPermissionMissing -> AssistantActionResult(
-                response = baseResponse + LocalizedResponses.notificationPermissionNeeded(intent.languageHint),
-                requestedPermission = KikoPermission.POST_NOTIFICATIONS,
-            )
-            is ReminderScheduleResult.Failed -> AssistantActionResult(response = baseResponse)
+            ReminderScheduleResult.Scheduled -> {
+                DiagnosticsLogger.reminderStored("scheduled")
+                AssistantActionResult(response = baseResponse)
+            }
+            ReminderScheduleResult.NotificationPermissionMissing -> {
+                DiagnosticsLogger.reminderStored("stored_notification_permission_missing")
+                AssistantActionResult(
+                    response = baseResponse + LocalizedResponses.notificationPermissionNeeded(intent.languageHint),
+                    requestedPermission = KikoPermission.POST_NOTIFICATIONS,
+                )
+            }
+            is ReminderScheduleResult.Failed -> {
+                DiagnosticsLogger.reminderStored("stored_schedule_failed")
+                AssistantActionResult(response = baseResponse)
+            }
         }
     }
 

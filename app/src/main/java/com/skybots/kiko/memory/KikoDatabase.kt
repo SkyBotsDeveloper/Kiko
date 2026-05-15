@@ -36,7 +36,7 @@ abstract class KikoDatabase : RoomDatabase() {
                     KikoDatabase::class.java,
                     "kiko_memory.db",
                 )
-                    // Pre-release V1: destructive migration is acceptable until schema stabilizes.
+                    // Pre-release V1 only. Replace with explicit migrations before public release.
                     .fallbackToDestructiveMigration()
                     .build()
                     .also { instance = it }

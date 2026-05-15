@@ -56,6 +56,14 @@ class BasicLocalIntentParserTest {
     }
 
     @Test
+    fun mummyKoPhoneLagaoExtractsContactQuery() {
+        val intent = parser.parse("mummy ko phone lagao")
+
+        assertEquals(IntentType.CALL_CONTACT, intent.type)
+        assertEquals("mummy", intent.contactQuery)
+    }
+
+    @Test
     fun unknownCommandMapsToUnknown() {
         val intent = parser.parse("please do the thing")
 
@@ -84,6 +92,13 @@ class BasicLocalIntentParserTest {
     }
 
     @Test
+    fun torchBujhaDoMapsToFlashlightOff() {
+        val intent = parser.parse("torch bujha do")
+
+        assertEquals(IntentType.FLASHLIGHT_OFF, intent.type)
+    }
+
+    @Test
     fun volumeCommandExtractsPercent() {
         val intent = parser.parse("volume 50 kar do")
 
@@ -101,10 +116,48 @@ class BasicLocalIntentParserTest {
     }
 
     @Test
+    fun awazBadhaoMapsToVolumeIncrease() {
+        val intent = parser.parse("awaz badhao")
+
+        assertEquals(IntentType.SET_VOLUME, intent.type)
+        assertEquals(AdjustmentDirection.INCREASE, intent.adjustmentDirection)
+    }
+
+    @Test
+    fun volumeFullMapsToOneHundredPercent() {
+        val intent = parser.parse("volume full karo")
+
+        assertEquals(IntentType.SET_VOLUME, intent.type)
+        assertEquals(100, intent.numericValue)
+    }
+
+    @Test
     fun brightnessCommandExtractsPercent() {
         val intent = parser.parse("brightness 70 karo")
 
         assertEquals(IntentType.SET_BRIGHTNESS, intent.type)
         assertEquals(70, intent.numericValue)
+    }
+
+    @Test
+    fun screenDimKaroMapsToBrightnessDecrease() {
+        val intent = parser.parse("screen dim karo")
+
+        assertEquals(IntentType.SET_BRIGHTNESS, intent.type)
+        assertEquals(AdjustmentDirection.DECREASE, intent.adjustmentDirection)
+    }
+
+    @Test
+    fun kikoKoKisneBanayaMapsToCreatorIdentity() {
+        val intent = parser.parse("kiko ko kisne banaya")
+
+        assertEquals(IntentType.CREATOR_IDENTITY, intent.type)
+    }
+
+    @Test
+    fun weatherBataoMapsToInternetRequired() {
+        val intent = parser.parse("weather batao")
+
+        assertEquals(IntentType.INTERNET_REQUIRED_QUERY, intent.type)
     }
 }

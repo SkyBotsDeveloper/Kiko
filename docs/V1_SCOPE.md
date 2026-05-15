@@ -63,6 +63,20 @@ Phase 5 foundation completed:
 - Improved language/style preference routing across app, contact, device,
   creator, unknown, internet-required, permission, and memory responses
 
+Phase 6 readiness polish completed:
+
+- Broader deterministic parser coverage for app, contact, flashlight, volume,
+  brightness, alarm, reminder, creator, and internet-required query variants
+- Improved date/time parsing for today, tomorrow, aaj, kal, AM/PM, 24-hour
+  times, 6 baje, 6:30, subah, dopahar, shaam, and raat
+- Safer clarification behavior with cancel phrases such as cancel, rehne do,
+  chhodo, nahi, radd karo, and chhodo in Hindi
+- Lightweight Logcat diagnostics for voice, parser routing, permissions,
+  actions, reminders, and TTS without remote analytics
+- Main UI try-saying examples, relevant permission guidance, and settings
+  permission explanations
+- Room migration policy and real-device manual QA checklist
+
 Out of scope for V1:
 
 - Cloud AI dependency

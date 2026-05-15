@@ -24,6 +24,7 @@ import com.skybots.kiko.creator.CreatorActionHandler
 import com.skybots.kiko.creator.DefaultCreatorActionHandler
 import com.skybots.kiko.memory.InteractionSummaryEntity
 import com.skybots.kiko.memory.MemoryRepository
+import com.skybots.kiko.utils.DiagnosticsLogger
 import com.skybots.kiko.utils.TextNormalizer
 
 class AssistantOrchestrator(
@@ -38,6 +39,25 @@ class AssistantOrchestrator(
 ) {
     fun processTranscript(transcript: String): AssistantResult =
         runCatching {
+            val pending = clarificationManager.currentPendingAction()
+            if (
+                pending != null &&
+                pending.type != PendingActionType.REMEMBER_APP_ALIAS &&
+                pending.type != PendingActionType.REMEMBER_CONTACT_ALIAS &&
+                isCancel(transcript)
+            ) {
+                clarificationManager.clear()
+                return@runCatching AssistantResult(
+                    intent = AssistantIntent(
+                        type = IntentType.UNKNOWN,
+                        rawText = transcript,
+                        languageHint = pending.languageHint,
+                    ),
+                    response = LocalizedResponses.clarificationCancelled(pending.languageHint),
+                    runtimeState = AssistantRuntimeState.IDLE,
+                )
+            }
+
             handleMemoryConfirmation(transcript)?.let { return@runCatching it }
 
             when (val clarification = clarificationManager.resolve(transcript)) {
@@ -55,10 +75,8 @@ class AssistantOrchestrator(
                             clarification.pendingAction.languageHint,
                         )
                     } else {
-                        LocalizedResponses.clarificationRetry(
-                            type = clarification.pendingAction.type,
-                            candidateNames = clarification.pendingAction.candidates.map { it.label },
-                            languageHint = clarification.pendingAction.languageHint,
+                        LocalizedResponses.clarificationWaiting(
+                            clarification.pendingAction.languageHint,
                         )
                     }
                     return@runCatching AssistantResult(
@@ -74,7 +92,9 @@ class AssistantOrchestrator(
             }
 
             val intent = withPreferredLanguage(intentParser.parse(transcript))
+            DiagnosticsLogger.parserIntent(intent.type)
             val actionResult = route(intent)
+            actionResult.requestedPermission?.let(DiagnosticsLogger::permissionMissing)
             saveInteractionSummary(intent)
             AssistantResult(
                 intent = intent,
@@ -96,8 +116,9 @@ class AssistantOrchestrator(
             )
         }
 
-    private fun route(intent: AssistantIntent): AssistantActionResult =
-        when (intent.type) {
+    private fun route(intent: AssistantIntent): AssistantActionResult {
+        DiagnosticsLogger.actionRoute(intent.type)
+        return when (intent.type) {
             IntentType.OPEN_APP -> appActionHandler.handle(intent)
             IntentType.CALL_CONTACT -> contactActionHandler.handle(intent)
             IntentType.FLASHLIGHT_ON,
@@ -114,6 +135,7 @@ class AssistantOrchestrator(
                 response = LocalizedResponses.unknown(intent.languageHint),
             )
         }
+    }
 
     private fun routeClarification(
         pendingAction: PendingAction,
@@ -199,6 +221,15 @@ class AssistantOrchestrator(
             return AssistantResult(
                 intent = intent,
                 response = LocalizedResponses.aliasNotRemembered(languageHint),
+                runtimeState = AssistantRuntimeState.IDLE,
+            )
+        }
+
+        if (isCancel(transcript)) {
+            clarificationManager.clear()
+            return AssistantResult(
+                intent = intent,
+                response = LocalizedResponses.clarificationCancelled(languageHint),
                 runtimeState = AssistantRuntimeState.IDLE,
             )
         }
@@ -349,12 +380,38 @@ class AssistantOrchestrator(
 
     private fun isYes(text: String): Boolean {
         val tokens = TextNormalizer.tokens(text).toSet()
-        return tokens.any { it in YES_TOKENS }
+        val yesTokens = setOf("yes", "yeah", "yep", "haan", "han", "ha", "\u0939\u093e\u0901")
+        return tokens.any { it in yesTokens }
     }
 
     private fun isNo(text: String): Boolean {
         val tokens = TextNormalizer.tokens(text).toSet()
-        return tokens.any { it in NO_TOKENS }
+        val noTokens = setOf("no", "nope", "nahi", "nahin", "\u0928\u0939\u0940\u0902", "\u0928\u093e")
+        return tokens.any { it in noTokens }
+    }
+
+    private fun isCancel(text: String): Boolean {
+        val normalized = TextNormalizer.normalize(text)
+        val tokens = TextNormalizer.tokens(text).toSet()
+        val cancelTokens = setOf(
+            "cancel",
+            "chhodo",
+            "chodo",
+            "nahi",
+            "nahin",
+            "\u0930\u0926\u094d\u0926",
+            "\u091b\u094b\u0921\u093c\u094b",
+            "\u0928\u0939\u0940\u0902",
+        )
+        val cancelPhrases = setOf(
+            "rehne do",
+            "chhod do",
+            "chhodo",
+            "\u0930\u0926\u094d\u0926 \u0915\u0930\u094b",
+            "\u091b\u094b\u0921\u093c\u094b",
+        )
+        return cancelPhrases.any { normalized.contains(it) } ||
+            tokens.any { it in cancelTokens }
     }
 
     private data class ContactMemorySelection(

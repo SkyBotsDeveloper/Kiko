@@ -139,11 +139,32 @@ fun KikoSettingsScreen(
             }
 
             PreferenceSection(title = "Permissions") {
+                PermissionGuidance(
+                    title = "Microphone",
+                    body = "Needed only when you tap the mic for manual voice input.",
+                )
+                PermissionGuidance(
+                    title = "Contacts",
+                    body = "Requested only when a call command needs contact lookup.",
+                )
+                PermissionGuidance(
+                    title = "Phone calls",
+                    body = "If direct call permission is missing, Kiko opens the dialer instead.",
+                )
+                PermissionGuidance(
+                    title = "Notifications",
+                    body = "Reminders can be saved without notification permission, but alerts need permission.",
+                )
                 PermissionLine(
                     label = "System brightness",
                     value = if (systemBrightnessControlAllowed) "Allowed" else "Needs extra permission",
                 )
                 if (!systemBrightnessControlAllowed) {
+                    Text(
+                        text = "System-wide brightness needs extra permission. Without it, Kiko can adjust only its own screen brightness.",
+                        color = KikoMutedText,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                     Button(
                         onClick = onAllowBrightnessControlClick,
                         modifier = Modifier.fillMaxWidth(),
@@ -327,6 +348,32 @@ private fun <T> ChipGroup(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PermissionGuidance(
+    title: String,
+    body: String,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, KikoBorder, RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text(
+            text = title,
+            color = Color.White,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = body,
+            color = KikoMutedText,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

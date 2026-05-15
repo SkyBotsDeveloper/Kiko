@@ -10,7 +10,9 @@ identity knowledge.
 Current V1 progress includes manual SpeechRecognizer input, Android TTS, app
 opening, contact call/dial flows, device controls, reminder storage, persisted
 clarification state, approved alias learning, and local JSON memory
-export/import. V1 remains offline-first with no login, API keys, or cloud AI.
+export/import. Phase 6 adds parser coverage, better offline date/time handling,
+clarification cancellation, local-only diagnostics, permission guidance, and
+manual QA docs. V1 remains offline-first with no login, API keys, or cloud AI.
 
 ## V2: Hey Kiko wake word
 

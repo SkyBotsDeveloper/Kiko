@@ -18,6 +18,7 @@ class AlarmActionHandler(
             AssistantActionResult(
                 response = LocalizedResponses.alarmSet(
                     displayTime = alarmTime.displayText,
+                    dayOffset = alarmTime.dayOffset,
                     languageHint = intent.languageHint,
                 ),
             )

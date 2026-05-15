@@ -101,7 +101,9 @@ fun KikoHomeScreen(
                         uiState.runtimeState != AssistantRuntimeState.SPEAKING,
                     onClick = onMicClick,
                 )
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                TrySayingSection()
+                Spacer(modifier = Modifier.height(14.dp))
                 AssistantTextPlaceholders(
                     transcript = uiState.transcript,
                     response = uiState.kikoResponse,
@@ -284,9 +286,46 @@ private fun AssistantTextPlaceholders(
             value = transcript,
         )
         PlaceholderLine(
-            label = "Kiko",
+            label = "Last result",
             value = response,
         )
+    }
+}
+
+@Composable
+private fun TrySayingSection() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = KikoSurface,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, KikoBorder),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp),
+        ) {
+            Text(
+                text = "Try saying",
+                color = KikoAccent,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+            )
+            listOf(
+                "Open Telegram",
+                "Call mummy",
+                "Torch jalao",
+                "Volume 50 karo",
+                "Kal 6 baje alarm lagao",
+            ).forEach { example ->
+                Text(
+                    text = example,
+                    color = Color.White.copy(alpha = 0.78f),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
     }
 }
 
@@ -320,6 +359,15 @@ private fun PlaceholderLine(
 
 @Composable
 private fun PermissionStatusSection(permissionStatuses: List<PermissionStatus>) {
+    val relevantStatuses = permissionStatuses.filter { status ->
+        !status.isGranted && status.permission in setOf(
+            KikoPermission.RECORD_AUDIO,
+            KikoPermission.READ_CONTACTS,
+            KikoPermission.POST_NOTIFICATIONS,
+        )
+    }
+    if (relevantStatuses.isEmpty()) return
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -335,7 +383,7 @@ private fun PermissionStatusSection(permissionStatuses: List<PermissionStatus>) 
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        permissionStatuses.forEach { status ->
+        relevantStatuses.forEach { status ->
             PermissionStatusRow(status = status)
         }
     }

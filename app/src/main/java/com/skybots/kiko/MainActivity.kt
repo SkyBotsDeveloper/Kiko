@@ -51,6 +51,7 @@ import com.skybots.kiko.ui.KikoHomeScreen
 import com.skybots.kiko.ui.KikoHomeUiState
 import com.skybots.kiko.ui.KikoSettingsScreen
 import com.skybots.kiko.ui.theme.KikoTheme
+import com.skybots.kiko.utils.DiagnosticsLogger
 import com.skybots.kiko.voice.SpeechRecognizerManager
 import com.skybots.kiko.voice.TtsManager
 import com.skybots.kiko.voice.VoiceInputState
@@ -389,12 +390,13 @@ private fun KikoApp() {
             permissionStatuses = permissionStatuses,
             onMicClick = {
                 refreshPermissionStatuses()
-                if (permissionManager.hasRecordAudioPermission()) {
-                    ttsManager.stop()
-                    speechRecognizerManager.startListening()
-                } else {
-                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
+            if (permissionManager.hasRecordAudioPermission()) {
+                ttsManager.stop()
+                speechRecognizerManager.startListening()
+            } else {
+                DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
+                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
             },
             onSettingsClick = {
                 refreshPreferences()

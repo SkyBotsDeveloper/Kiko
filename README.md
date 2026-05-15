@@ -20,7 +20,7 @@ needed, speak responses with Android TTS, and run basic Android actions.
 ## Current phase status
 
 This branch contains the Android scaffold plus the V1 assistant foundation
-through Phase 5:
+through Phase 6:
 
 - Kotlin Android app
 - Jetpack Compose UI
@@ -45,9 +45,17 @@ through Phase 5:
 - Persisted clarification outcomes so approved app/contact aliases can be reused
 - Local JSON export/import for user-controlled memory backup
 - Privacy documentation covering local-first storage and V1 no-cloud behavior
+- Expanded deterministic parser coverage for English, Hinglish, and Hindi
+  command variants
+- Improved alarm/reminder date-time parsing for today/tomorrow, kal/aaj, and
+  subah/dopahar/shaam/raat phrases
+- Clarification cancel handling and safer waiting prompts
+- Local-only Logcat diagnostics with redaction
+- Manual real-device QA checklist and Room migration policy docs
 
-See `docs/PRIVACY.md` and `docs/ANDROID_LIMITATIONS.md` for storage and Android
-platform constraints.
+See `docs/PRIVACY.md`, `docs/ANDROID_LIMITATIONS.md`,
+`docs/DB_MIGRATION_POLICY.md`, and `docs/V1_MANUAL_QA.md` for storage,
+platform constraints, migration policy, and manual QA coverage.
 
 Wake word detection, Accessibility Service automation, cloud AI, login, and API
 keys are not part of V1 scaffold work.
