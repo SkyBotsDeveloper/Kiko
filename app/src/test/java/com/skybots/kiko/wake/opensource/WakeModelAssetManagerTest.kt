@@ -14,6 +14,13 @@ class WakeModelAssetManagerTest {
     }
 
     @Test
+    fun presentModelReportsCompatibilityUnknownBeforeInterpreterLoad() {
+        val health = WakeModelAssetManager(modelExists = { true }).health()
+
+        assertEquals(WakeEngineHealthStatus.MODEL_FOUND_COMPATIBILITY_UNKNOWN, health.status)
+    }
+
+    @Test
     fun tfliteRunnerFailsGracefullyWhenModelMissing() {
         val runner = TfliteWakeModelRunner(
             assetManager = WakeModelAssetManager(modelExists = { false }),

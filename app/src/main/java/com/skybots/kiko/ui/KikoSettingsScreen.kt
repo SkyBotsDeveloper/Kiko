@@ -471,10 +471,15 @@ private fun PermissionLine(
 }
 
 private fun wakeWordHelpText(health: WakeEngineHealth): String =
-    if (health.isReady) {
-        "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected."
-    } else {
-        "${health.message} Use Fake/Test for development or manual mic until a trained local model is added."
+    when (health.status) {
+        com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.READY ->
+            "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected."
+        com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.MODEL_FOUND_COMPATIBILITY_UNKNOWN ->
+            health.message
+        com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.MODEL_MISSING ->
+            "Hey Kiko model is not installed yet. Manual mic and fake wake test still work."
+        else ->
+            "${health.message} Use Fake/Test for development or manual mic until a trained local model is added."
     }
 
 @Composable

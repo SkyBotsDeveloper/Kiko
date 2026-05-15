@@ -33,6 +33,8 @@ class TfliteWakeModelRunner(
             val inputTensor = created.getInputTensor(0)
             val outputTensor = created.getOutputTensor(0)
 
+            // TODO: Add a preprocessing adapter when the trained model expects mel
+            // spectrograms or openWakeWord-style embeddings instead of raw samples.
             if (inputTensor.dataType() != DataType.FLOAT32 || outputTensor.dataType() != DataType.FLOAT32) {
                 created.close()
                 return WakeEngineHealth.modelInvalid(

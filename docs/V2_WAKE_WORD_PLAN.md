@@ -9,6 +9,9 @@ Kiko intentionally does not use Picovoice Porcupine. The long-term direction is
 a free/open-source local wake-word pipeline that can run on Android with
 TensorFlow Lite.
 
+The project now includes `tools/wake_training/` so Kiko is not blocked by paid
+or unavailable hosted training UIs.
+
 Current engine options:
 
 - Open-source local: AudioRecord + TFLite model runner foundation.
@@ -51,6 +54,10 @@ app/src/main/assets/wake/hey_kiko.tflite
 No real model is committed in this phase. If the model is missing or invalid,
 the open-source engine reports a clear error and Kiko keeps manual mic plus
 Fake/Test wake available.
+
+The current Android runner supports a narrow raw-sample TFLite shape. Models
+that expect mel spectrograms or feature embeddings need an adapter before real
+wake detection can be claimed.
 
 ## Battery strategy
 

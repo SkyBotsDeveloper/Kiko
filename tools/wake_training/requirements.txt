@@ -1,0 +1,9 @@
+# Pinned for repeatable local/Colab wake-model tooling.
+# TensorFlow is intentionally listed for export inspection and future TFLite export.
+numpy==1.26.4
+scipy==1.11.4
+soundfile==0.12.1
+librosa==0.10.1
+tensorflow==2.15.1
+tqdm==4.66.4
+pyyaml==6.0.1

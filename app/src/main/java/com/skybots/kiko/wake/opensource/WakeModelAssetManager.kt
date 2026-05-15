@@ -31,7 +31,7 @@ class WakeModelAssetManager private constructor(
     fun health(): WakeEngineHealth =
         when {
             existsProvider != null -> if (existsProvider.invoke()) {
-                WakeEngineHealth.ready()
+                WakeEngineHealth.modelFoundCompatibilityUnknown()
             } else {
                 WakeEngineHealth.modelMissing()
             }
@@ -40,7 +40,7 @@ class WakeModelAssetManager private constructor(
                 val manager = assetManager ?: return WakeEngineHealth.modelMissing()
                 manager.openFd(modelPath).use { descriptor ->
                     if (descriptor.length > 0L) {
-                        WakeEngineHealth.ready()
+                        WakeEngineHealth.modelFoundCompatibilityUnknown()
                     } else {
                         WakeEngineHealth.modelInvalid("Open-source Hey Kiko model is empty.")
                     }

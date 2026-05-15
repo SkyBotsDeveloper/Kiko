@@ -1,0 +1,15 @@
+name: kiko-wake-training
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip=24.0
+  - numpy=1.26.4
+  - scipy=1.11.4
+  - libsndfile=1.2.2
+  - pip:
+      - soundfile==0.12.1
+      - librosa==0.10.1
+      - tensorflow==2.15.1
+      - tqdm==4.66.4
+      - pyyaml==6.0.1

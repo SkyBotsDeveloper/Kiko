@@ -32,14 +32,32 @@ secrets.*
 *apikey*
 
 # Wake-word models: commit only intentionally open-source models.
+*.tflite
+*.onnx
+*.ckpt
+*.pt
+*.pth
 app/src/main/assets/wake/*.tflite
 app/src/main/assets/wake/*.ppn
 app/src/main/assets/wake/*.pv
 !app/src/main/assets/wake/README.md
 !app/src/main/assets/wake/.gitkeep
 
+# Wake training outputs and datasets
+tools/wake_training/output/
+tools/wake_training/datasets/
+tools/wake_training/generated_samples/
+tools/wake_training/training_runs/
+datasets/
+generated_samples/
+training_runs/
+
 # Kotlin
 *.kotlin_module
+
+# Python
+__pycache__/
+*.py[cod]
 
 # Logs
 *.log
