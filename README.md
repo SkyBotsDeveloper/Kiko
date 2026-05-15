@@ -10,6 +10,17 @@ Kiko V1 core features passed real-device manual QA on a Samsung SM-A556E running
 Android 16. No major crash or major slow/weird behavior was found during the V1
 manual test pass.
 
+## V2 Wake-word Foundation
+
+The `v2-wake-word` branch adds the safe foundation for future `Hey Kiko` wake
+support. Wake word is optional and off by default, runs only through a visible
+foreground service, and currently uses a fake/manual test engine so no Picovoice
+key or private wake model is required.
+
+The foundation does not add cloud AI, login, Accessibility Service automation,
+or always-on Android SpeechRecognizer. Full voice recognition starts only after
+manual mic input or a wake-detected event.
+
 ## V1 Features
 
 - Manual mic voice input using Android SpeechRecognizer.
@@ -49,9 +60,12 @@ permissions, OEM policy, and installed system apps:
   permission on Android 13+.
 - Flashlight control can fail gracefully if hardware is unavailable or camera is
   in use.
+- Wake-word listening, when enabled in V2, requires microphone permission and a
+  foreground service notification.
 
 See `docs/ANDROID_LIMITATIONS.md`, `docs/PRIVACY.md`,
-`docs/DB_MIGRATION_POLICY.md`, and `docs/V1_MANUAL_QA.md` for details.
+`docs/DB_MIGRATION_POLICY.md`, `docs/V1_MANUAL_QA.md`, and
+`docs/V2_WAKE_WORD_PLAN.md` for details.
 
 ## Build Instructions
 
@@ -81,8 +95,10 @@ compatible JDK.
 
 ## Roadmap
 
-- V2: "Hey Kiko" wake phrase support after core runtime and battery behavior are
-  ready.
+- V2: "Hey Kiko" wake phrase support. The current foundation adds the
+  foreground service, fake engine, settings, notification, diagnostics, and
+  tests. Real Porcupine integration is planned next and must not commit any real
+  AccessKey or private model.
 - V3: Accessibility automation for deeper app interaction after safety and user
   controls are mature.
 - Later: optional cloud AI and premium voice features, without weakening the

@@ -19,6 +19,15 @@ manual QA docs. V1 remains offline-first with no login, API keys, or cloud AI.
 Add the future wake phrase flow for "Hey Kiko" after the core assistant loop is
 stable and battery/runtime behavior can be evaluated carefully.
 
+Phase 1 adds the wake-word architecture, foreground microphone service,
+persistent notification, fake/manual test wake engine, settings toggle, runtime
+states, diagnostics, tests, and docs. Wake word remains optional and off by
+default. No real Picovoice key or private model is committed.
+
+The next V2 phase can integrate a real Porcupine engine behind the
+`WakeWordEngine` abstraction using private developer credentials and model files
+that stay out of Git.
+
 ## V3: Accessibility automation
 
 Introduce Accessibility Service automation for deeper app interaction only after

@@ -49,6 +49,13 @@ object DiagnosticsLogger {
         log("tts_failure", redactForLog(reason))
     }
 
+    fun wakeEvent(
+        event: String,
+        detail: String = "",
+    ) {
+        log(event, redactForLog(detail))
+    }
+
     fun redactForLog(value: String): String {
         val compact = value
             .replace(phoneLikeDigits, "[redacted-number]")

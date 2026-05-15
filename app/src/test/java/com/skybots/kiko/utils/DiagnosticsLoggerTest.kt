@@ -20,4 +20,12 @@ class DiagnosticsLoggerTest {
         assertTrue(redacted.length < 100)
         assertTrue(redacted.endsWith("..."))
     }
+
+    @Test
+    fun wakeDiagnosticsUseSharedRedactionRules() {
+        val redacted = DiagnosticsLogger.redactForLog("wake failed near 9876543210")
+
+        assertFalse(redacted.contains("9876543210"))
+        assertTrue(redacted.contains("[redacted-number]"))
+    }
 }

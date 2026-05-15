@@ -56,6 +56,12 @@ import com.skybots.kiko.voice.SpeechRecognizerManager
 import com.skybots.kiko.voice.TtsManager
 import com.skybots.kiko.voice.VoiceInputState
 import com.skybots.kiko.voice.VoiceOutputState
+import com.skybots.kiko.wake.WakeWordControlResult
+import com.skybots.kiko.wake.WakeWordEngineState
+import com.skybots.kiko.wake.WakeWordEvent
+import com.skybots.kiko.wake.WakeWordRuntime
+import com.skybots.kiko.wake.WakeWordServiceController
+import com.skybots.kiko.wake.WakeWordSensitivity
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -153,6 +159,19 @@ private fun KikoApp() {
     var systemBrightnessControlAllowed by remember {
         mutableStateOf(Settings.System.canWrite(context))
     }
+    val wakeWordController = remember(context) {
+        WakeWordServiceController(
+            context = context,
+            permissionManager = permissionManager,
+            memoryRepository = memoryRepository,
+        )
+    }
+    var wakeWordStatus by remember {
+        mutableStateOf(wakeWordController.getStatus())
+    }
+    var pendingWakeEnableRequest by remember {
+        mutableStateOf(false)
+    }
 
     fun refreshPermissionStatuses() {
         permissionStatuses = permissionManager.getPermissionStatuses()
@@ -162,9 +181,29 @@ private fun KikoApp() {
         preferences = memoryRepository.getUserPreferences()
     }
 
+    fun refreshWakeWordStatus() {
+        wakeWordStatus = wakeWordController.getStatus()
+    }
+
     fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {
         memoryRepository.updateUserPreferences(transform(preferences))
         refreshPreferences()
+        refreshWakeWordStatus()
+    }
+
+    fun applyWakeResult(result: WakeWordControlResult) {
+        uiState = uiState.copy(
+            runtimeState = if (result.state == WakeWordEngineState.Error) {
+                AssistantRuntimeState.ERROR
+            } else {
+                uiState.runtimeState
+            },
+            statusMessage = result.message,
+            kikoResponse = result.message,
+        )
+        refreshPreferences()
+        refreshPermissionStatuses()
+        refreshWakeWordStatus()
     }
 
     val ttsManager = remember(context) {
@@ -238,7 +277,7 @@ private fun KikoApp() {
                 Manifest.permission.READ_CONTACTS,
             )
             KikoPermission.POST_NOTIFICATIONS -> notificationPermissionLauncher.launch(
-                Manifest.permission.POST_NOTIFICATIONS,
+                KikoPermission.POST_NOTIFICATIONS.androidPermission,
             )
             null,
             KikoPermission.RECORD_AUDIO,
@@ -303,7 +342,19 @@ private fun KikoApp() {
         contract = ActivityResultContracts.RequestPermission(),
     ) { granted ->
         refreshPermissionStatuses()
-        if (granted) {
+        if (pendingWakeEnableRequest) {
+            pendingWakeEnableRequest = false
+            if (granted) {
+                applyWakeResult(wakeWordController.enableWakeWord())
+            } else {
+                wakeWordStatus = WakeWordEngineState.PermissionMissing
+                uiState = uiState.copy(
+                    runtimeState = AssistantRuntimeState.ERROR,
+                    kikoResponse = "Microphone permission is needed before Hey Kiko can be enabled.",
+                    statusMessage = "Microphone permission denied.",
+                )
+            }
+        } else if (granted) {
             speechRecognizerManager.startListening()
         } else {
             uiState = uiState.copy(
@@ -312,6 +363,54 @@ private fun KikoApp() {
                 statusMessage = "Microphone permission denied.",
             )
         }
+    }
+
+    fun startListeningFromWakeWord() {
+        refreshPermissionStatuses()
+        if (permissionManager.hasRecordAudioPermission()) {
+            ttsManager.stop()
+            uiState = uiState.copy(
+                runtimeState = AssistantRuntimeState.LISTENING,
+                statusMessage = "Hey Kiko heard. Listening.",
+            )
+            speechRecognizerManager.startListeningFromWakeWord()
+        } else {
+            DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
+            wakeWordStatus = WakeWordEngineState.PermissionMissing
+            uiState = uiState.copy(
+                runtimeState = AssistantRuntimeState.ERROR,
+                kikoResponse = "Microphone permission is needed for Hey Kiko.",
+                statusMessage = "Microphone permission missing.",
+            )
+        }
+    }
+
+    DisposableEffect(speechRecognizerManager) {
+        val unsubscribe = WakeWordRuntime.subscribe { event ->
+            when (event) {
+                WakeWordEvent.Started -> {
+                    wakeWordStatus = WakeWordEngineState.Listening
+                    uiState = uiState.copy(statusMessage = "Hey Kiko wake word is listening.")
+                }
+                WakeWordEvent.Stopped -> {
+                    wakeWordStatus = wakeWordController.getStatus()
+                    uiState = uiState.copy(statusMessage = "Wake-word service stopped.")
+                }
+                WakeWordEvent.WakeDetected -> {
+                    wakeWordStatus = WakeWordEngineState.WakeDetected
+                    startListeningFromWakeWord()
+                }
+                is WakeWordEvent.Error -> {
+                    wakeWordStatus = WakeWordEngineState.Error
+                    uiState = uiState.copy(
+                        runtimeState = AssistantRuntimeState.ERROR,
+                        kikoResponse = event.message,
+                        statusMessage = event.message,
+                    )
+                }
+            }
+        }
+        onDispose { unsubscribe() }
     }
 
     DisposableEffect(Unit) {
@@ -328,9 +427,12 @@ private fun KikoApp() {
             exportedJson = exportedMemoryJson,
             importJson = importMemoryJson,
             systemBrightnessControlAllowed = systemBrightnessControlAllowed,
+            wakeWordStatus = wakeWordStatus,
+            showWakeWordTestControls = true,
             onBackClick = {
                 refreshPermissionStatuses()
                 systemBrightnessControlAllowed = Settings.System.canWrite(context)
+                refreshWakeWordStatus()
                 showSettings = false
             },
             onVoiceEnabledChange = { enabled ->
@@ -348,11 +450,32 @@ private fun KikoApp() {
             onSaveInteractionSummariesChange = { enabled ->
                 updatePreferences { it.copy(saveInteractionSummaries = enabled) }
             },
+            onWakeWordEnabledChange = { enabled ->
+                if (enabled) {
+                    refreshPermissionStatuses()
+                    val result = wakeWordController.enableWakeWord()
+                    if (result.state == WakeWordEngineState.PermissionMissing) {
+                        pendingWakeEnableRequest = true
+                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                    applyWakeResult(result)
+                } else {
+                    applyWakeResult(wakeWordController.disableWakeWord())
+                }
+            },
+            onWakeWordSensitivityChange = { sensitivity: WakeWordSensitivity ->
+                updatePreferences { it.copy(wakeWordSensitivity = sensitivity.name) }
+            },
+            onTestWakeWordClick = {
+                applyWakeResult(wakeWordController.simulateWakeDetection())
+            },
             onClearMemoryClick = {
                 memoryRepository.clearAllMemory()
                 clarificationManager.clear()
                 exportedMemoryJson = ""
                 importMemoryJson = ""
+                refreshPreferences()
+                refreshWakeWordStatus()
                 uiState = uiState.copy(statusMessage = "Local memory cleared.")
             },
             onExportMemoryClick = {
@@ -364,6 +487,7 @@ private fun KikoApp() {
                 runCatching {
                     memoryRepository.importMemoryJson(importMemoryJson)
                     refreshPreferences()
+                    refreshWakeWordStatus()
                     exportedMemoryJson = ""
                     uiState = uiState.copy(statusMessage = "Memory JSON imported.")
                 }.getOrElse { error ->
@@ -388,20 +512,28 @@ private fun KikoApp() {
         KikoHomeScreen(
             uiState = uiState,
             permissionStatuses = permissionStatuses,
+            wakeWordState = wakeWordStatus,
             onMicClick = {
                 refreshPermissionStatuses()
-            if (permissionManager.hasRecordAudioPermission()) {
-                ttsManager.stop()
-                speechRecognizerManager.startListening()
-            } else {
-                DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
-                micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            }
+                if (permissionManager.hasRecordAudioPermission()) {
+                    ttsManager.stop()
+                    speechRecognizerManager.startListening()
+                } else {
+                    DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
+                    micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
             },
             onSettingsClick = {
                 refreshPreferences()
                 refreshPermissionStatuses()
+                refreshWakeWordStatus()
                 systemBrightnessControlAllowed = Settings.System.canWrite(context)
+                showSettings = true
+            },
+            onWakeStatusClick = {
+                refreshPreferences()
+                refreshPermissionStatuses()
+                refreshWakeWordStatus()
                 showSettings = true
             },
         )

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -14,7 +16,7 @@ import androidx.room.RoomDatabase
         ReminderEntity::class,
         InteractionSummaryEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class KikoDatabase : RoomDatabase() {
@@ -36,10 +38,29 @@ abstract class KikoDatabase : RoomDatabase() {
                     KikoDatabase::class.java,
                     "kiko_memory.db",
                 )
-                    // Pre-release V1 only. Replace with explicit migrations before public release.
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                     .also { instance = it }
             }
+
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE user_preferences ADD COLUMN wakeWordEnabled INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE user_preferences ADD COLUMN wakeWordPhrase TEXT NOT NULL DEFAULT 'Hey Kiko'",
+                )
+                db.execSQL(
+                    "ALTER TABLE user_preferences ADD COLUMN wakeWordEngine TEXT NOT NULL DEFAULT 'fake'",
+                )
+                db.execSQL(
+                    "ALTER TABLE user_preferences ADD COLUMN wakeWordSensitivity TEXT NOT NULL DEFAULT 'BALANCED'",
+                )
+                db.execSQL(
+                    "ALTER TABLE user_preferences ADD COLUMN wakeWordStatus TEXT NOT NULL DEFAULT 'Disabled'",
+                )
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,13 +59,16 @@ import com.skybots.kiko.ui.theme.KikoBorder
 import com.skybots.kiko.ui.theme.KikoMutedText
 import com.skybots.kiko.ui.theme.KikoSurface
 import com.skybots.kiko.ui.theme.KikoTheme
+import com.skybots.kiko.wake.WakeWordEngineState
 
 @Composable
 fun KikoHomeScreen(
     uiState: KikoHomeUiState,
     permissionStatuses: List<PermissionStatus>,
+    wakeWordState: WakeWordEngineState,
     onMicClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onWakeStatusClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -82,6 +86,8 @@ fun KikoHomeScreen(
             KikoHeader(
                 uiState = uiState,
                 onSettingsClick = onSettingsClick,
+                wakeWordState = wakeWordState,
+                onWakeStatusClick = onWakeStatusClick,
             )
 
             Column(
@@ -120,6 +126,8 @@ fun KikoHomeScreen(
 private fun KikoHeader(
     uiState: KikoHomeUiState,
     onSettingsClick: () -> Unit,
+    wakeWordState: WakeWordEngineState,
+    onWakeStatusClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -161,6 +169,11 @@ private fun KikoHeader(
         )
         Spacer(modifier = Modifier.height(10.dp))
         RuntimeStatusLine(uiState = uiState)
+        Spacer(modifier = Modifier.height(8.dp))
+        WakeWordStatusLine(
+            wakeWordState = wakeWordState,
+            onClick = onWakeStatusClick,
+        )
     }
 }
 
@@ -186,6 +199,40 @@ private fun RuntimeStatusLine(uiState: KikoHomeUiState) {
                 text = uiState.statusMessage,
                 color = KikoMutedText,
                 style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WakeWordStatusLine(
+    wakeWordState: WakeWordEngineState,
+    onClick: () -> Unit,
+) {
+    Surface(
+        color = KikoSurface,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, KikoBorder),
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Wake word",
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+            )
+            Text(
+                text = wakeWordState.label,
+                color = if (wakeWordState == WakeWordEngineState.Listening) KikoAccent else Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -428,8 +475,10 @@ private fun KikoHomeScreenPreview() {
             permissionStatuses = KikoPermission.entries.map { permission ->
                 PermissionStatus(permission = permission, isGranted = false)
             },
+            wakeWordState = WakeWordEngineState.Disabled,
             onMicClick = {},
             onSettingsClick = {},
+            onWakeStatusClick = {},
         )
     }
 }

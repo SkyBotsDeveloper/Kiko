@@ -24,6 +24,9 @@ class InMemoryMemoryRepositoryTest {
         assertTrue(preferences.voiceEnabled)
         assertTrue(preferences.personalizationEnabled)
         assertFalse(preferences.saveInteractionSummaries)
+        assertFalse(preferences.wakeWordEnabled)
+        assertEquals("Hey Kiko", preferences.wakeWordPhrase)
+        assertEquals("fake", preferences.wakeWordEngine)
     }
 
     @Test
@@ -118,6 +121,7 @@ class InMemoryMemoryRepositoryTest {
 
         assertFalse(exported.contains("call mummy"))
         assertEquals(LanguageStyle.HINDI.name, imported.getUserPreferences().preferredLanguageStyle)
+        assertFalse(imported.getUserPreferences().wakeWordEnabled)
         assertEquals("Mummy Ghar", imported.findContactAlias("mummy")?.contactName)
         assertEquals("YouTube", imported.findAppAlias("yt")?.appLabel)
     }

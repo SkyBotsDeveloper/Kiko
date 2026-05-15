@@ -12,7 +12,7 @@ data class ImportedMemory(
 )
 
 object MemoryJsonCodec {
-    private const val VERSION = 1
+    private const val VERSION = 2
 
     fun encode(
         preferences: UserPreferenceEntity,
@@ -30,7 +30,11 @@ object MemoryJsonCodec {
                     .put("replyStyle", preferences.replyStyle)
                     .put("voiceEnabled", preferences.voiceEnabled)
                     .put("personalizationEnabled", preferences.personalizationEnabled)
-                    .put("saveInteractionSummaries", preferences.saveInteractionSummaries),
+                    .put("saveInteractionSummaries", preferences.saveInteractionSummaries)
+                    .put("wakeWordEnabled", preferences.wakeWordEnabled)
+                    .put("wakeWordPhrase", preferences.wakeWordPhrase)
+                    .put("wakeWordEngine", preferences.wakeWordEngine)
+                    .put("wakeWordSensitivity", preferences.wakeWordSensitivity),
             )
             .put(
                 "appAliases",
@@ -95,6 +99,10 @@ object MemoryJsonCodec {
                 voiceEnabled = prefs.optBoolean("voiceEnabled", true),
                 personalizationEnabled = prefs.optBoolean("personalizationEnabled", true),
                 saveInteractionSummaries = prefs.optBoolean("saveInteractionSummaries", false),
+                wakeWordEnabled = prefs.optBoolean("wakeWordEnabled", false),
+                wakeWordPhrase = prefs.optString("wakeWordPhrase", "Hey Kiko"),
+                wakeWordEngine = prefs.optString("wakeWordEngine", "fake"),
+                wakeWordSensitivity = prefs.optString("wakeWordSensitivity", "BALANCED"),
             )
         }
 

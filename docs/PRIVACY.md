@@ -5,6 +5,8 @@ Kiko V1 is local-first.
 - No login system.
 - No cloud AI in V1.
 - No API keys.
+- Wake word is optional and off by default in V2.
+- Wake-word audio is not sent to cloud services.
 - Contacts stay on device.
 - Installed app lists stay on device.
 - Memory is stored locally in Room.
@@ -16,9 +18,13 @@ Kiko V1 is local-first.
 - Diagnostics are local Logcat-only messages.
 - Diagnostics redact phone-like numbers and truncate long text.
 
-Kiko does not send contacts, app lists, reminders, aliases, preferences, or
-assistant memory to a server in V1.
+Kiko does not send contacts, app lists, reminders, aliases, preferences,
+assistant memory, or wake-word audio to a server.
 
 Memory export does not include raw full conversations, hidden API keys, secrets,
 or a full contacts dump. Contact aliases are saved only after user-approved
 personalization decisions.
+
+Real wake-word engine integration will require external credentials or model
+files in a later phase. Those secrets and private models must stay out of the
+repository.

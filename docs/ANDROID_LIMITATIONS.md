@@ -36,13 +36,24 @@ OEM camera service rejects the request. Kiko handles those cases without crashin
 ## Local Memory
 
 Room is the primary V1 storage layer for preferences, aliases, pending
-clarifications, reminders, and optional structured summaries. Because Kiko is
-pre-release, destructive schema migration is currently enabled and documented so
-the local schema can stabilize before a public V1 build.
+clarifications, reminders, and optional structured summaries. V2 adds explicit
+Room migration from schema version `1` to `2` for wake-word preferences.
+
+## Wake Word
+
+V2 wake-word listening is optional and off by default. When enabled, Android
+requires microphone permission and a foreground service notification. Android
+14+ also requires the microphone foreground service type and related foreground
+service permission.
+
+Kiko does not keep Android `SpeechRecognizer` always running. Full speech
+recognition starts only after `Hey Kiko` is detected by the wake engine or by
+the fake/manual test flow. If the app is backgrounded and Android blocks direct
+UI launch, Kiko relies on the foreground notification action.
 
 ## Diagnostics
 
 Diagnostics are written to local Logcat only. They are intended for debugging
 voice start/results, parser intent type, action routing, permission gaps,
-reminder scheduling/storage, and TTS state. Kiko does not send diagnostics to a
-server in V1.
+reminder scheduling/storage, TTS state, and wake-word service state. Kiko does
+not send diagnostics to a server.

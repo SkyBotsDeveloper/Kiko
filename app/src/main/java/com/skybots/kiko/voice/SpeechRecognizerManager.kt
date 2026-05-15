@@ -7,6 +7,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import com.skybots.kiko.utils.DiagnosticsLogger
+import com.skybots.kiko.wake.WakeWordDiagnostics
 import java.util.Locale
 
 class SpeechRecognizerManager(
@@ -58,6 +59,11 @@ class SpeechRecognizerManager(
                 ),
             )
         }
+    }
+
+    fun startListeningFromWakeWord() {
+        WakeWordDiagnostics.wakeFlowStarted()
+        startListening()
     }
 
     fun stopListening() {

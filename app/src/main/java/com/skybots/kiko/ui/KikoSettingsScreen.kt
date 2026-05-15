@@ -50,6 +50,10 @@ import com.skybots.kiko.ui.theme.KikoBackground
 import com.skybots.kiko.ui.theme.KikoBorder
 import com.skybots.kiko.ui.theme.KikoMutedText
 import com.skybots.kiko.ui.theme.KikoSurface
+import com.skybots.kiko.wake.WakeWordConfig
+import com.skybots.kiko.wake.WakeWordEngineState
+import com.skybots.kiko.wake.WakeWordSensitivity
+import com.skybots.kiko.wake.wakeWordSensitivityFrom
 
 @Composable
 fun KikoSettingsScreen(
@@ -58,12 +62,17 @@ fun KikoSettingsScreen(
     exportedJson: String,
     importJson: String,
     systemBrightnessControlAllowed: Boolean,
+    wakeWordStatus: WakeWordEngineState,
+    showWakeWordTestControls: Boolean,
     onBackClick: () -> Unit,
     onVoiceEnabledChange: (Boolean) -> Unit,
     onLanguageStyleChange: (LanguageStyle) -> Unit,
     onReplyStyleChange: (ReplyStyle) -> Unit,
     onPersonalizationEnabledChange: (Boolean) -> Unit,
     onSaveInteractionSummariesChange: (Boolean) -> Unit,
+    onWakeWordEnabledChange: (Boolean) -> Unit,
+    onWakeWordSensitivityChange: (WakeWordSensitivity) -> Unit,
+    onTestWakeWordClick: () -> Unit,
     onClearMemoryClick: () -> Unit,
     onExportMemoryClick: () -> Unit,
     onImportJsonChange: (String) -> Unit,
@@ -115,6 +124,48 @@ fun KikoSettingsScreen(
                     selected = replyStyleFrom(preferences.replyStyle),
                     onSelected = onReplyStyleChange,
                 )
+            }
+
+            PreferenceSection(title = "Wake word") {
+                ToggleRow(
+                    title = "Enable \"Hey Kiko\"",
+                    subtitle = "Optional foreground wake-word listening. Off by default.",
+                    checked = preferences.wakeWordEnabled,
+                    onCheckedChange = onWakeWordEnabledChange,
+                )
+                PermissionLine(
+                    label = "Status",
+                    value = wakeWordStatus.label,
+                )
+                PermissionLine(
+                    label = "Wake phrase",
+                    value = WakeWordConfig.DEFAULT_PHRASE,
+                )
+                ChipGroup(
+                    title = "Sensitivity",
+                    options = listOf(
+                        WakeWordSensitivity.LOW to "Low",
+                        WakeWordSensitivity.BALANCED to "Balanced",
+                        WakeWordSensitivity.HIGH to "High",
+                    ),
+                    selected = wakeWordSensitivityFrom(preferences.wakeWordSensitivity),
+                    onSelected = onWakeWordSensitivityChange,
+                )
+                Text(
+                    text = "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected.",
+                    color = KikoMutedText,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                if (showWakeWordTestControls) {
+                    Button(
+                        onClick = onTestWakeWordClick,
+                        enabled = preferences.wakeWordEnabled,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = KikoAccent),
+                    ) {
+                        Text("Test wake flow / Simulate Hey Kiko")
+                    }
+                }
             }
 
             PreferenceSection(title = "Personalization") {

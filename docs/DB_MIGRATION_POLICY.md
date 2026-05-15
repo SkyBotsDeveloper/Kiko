@@ -6,13 +6,12 @@ export is enabled so changes can be reviewed before public release.
 This policy is intentionally conservative: public-release builds must protect
 user memory and must not silently wipe local data.
 
-## Current Pre-release Policy
+## Current Policy
 
-- Room uses schema version `1`.
-- Destructive migration is currently allowed only because V1 is not public yet.
-- This can wipe local memory during development builds if the schema changes.
-- The limitation is acceptable for pre-release testing, but it must not be used
-  silently for public user data.
+- Room uses schema version `2`.
+- Schema export is committed under `app/schemas`.
+- V2 adds an explicit `1 -> 2` migration for wake-word preference fields.
+- Destructive migration must not be used silently for public user data.
 
 ## Public Release Policy
 
