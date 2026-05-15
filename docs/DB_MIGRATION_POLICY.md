@@ -3,6 +3,9 @@
 Kiko V1 is still pre-release. The Room database schema is versioned and schema
 export is enabled so changes can be reviewed before public release.
 
+This policy is intentionally conservative: public-release builds must protect
+user memory and must not silently wipe local data.
+
 ## Current Pre-release Policy
 
 - Room uses schema version `1`.

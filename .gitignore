@@ -17,8 +17,26 @@ captures/
 .externalNativeBuild/
 .cxx/
 
+# Signing / secrets
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.mobileprovision
+.env
+.env.*
+secrets.*
+*secret*
+*api_key*
+*apikey*
+
 # Kotlin
 *.kotlin_module
+
+# Logs
+*.log
+logs/
 
 # OS files
 .DS_Store
@@ -26,3 +44,8 @@ Thumbs.db
 
 # Temporary workspace files
 .tmp/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp

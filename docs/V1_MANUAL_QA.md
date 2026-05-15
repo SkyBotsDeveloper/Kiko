@@ -3,6 +3,21 @@
 Use a real Android device when possible. Keep V1 offline-first: do not add cloud
 AI, wake word, Accessibility Service, API keys, or login flows.
 
+## Real-device QA Summary
+
+- Device: Samsung SM-A556E
+- Android: 16
+- Result: V1 core features passed manual testing.
+- Installed successfully and core app opened successfully.
+- Mic/SpeechRecognizer and Android TTS worked.
+- Creator identity, app opening, app aliases, contacts permission, dialer
+  fallback, contact clarification, multi-number clarification, flashlight,
+  volume, brightness, alarms, reminders, settings, memory alias learning, and
+  internet-required/offline message all worked.
+- Direct call worked after `CALL_PHONE` permission was granted.
+- No major crash found.
+- No major slow/weird behavior found.
+
 ## Setup
 
 - Install the debug APK.

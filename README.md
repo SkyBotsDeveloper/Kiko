@@ -1,88 +1,95 @@
 # Kiko
 
-Kiko is an offline-first Android voice assistant created by Siddhartha Abhimanyu.
-It is not a chatbot app. Kiko is being built as an action-oriented assistant for
-real phone control.
+Kiko is an offline-first Android voice assistant created by Siddhartha
+Abhimanyu. It is not a chatbot app. Kiko V1 is an action-oriented assistant for
+real phone control using manual microphone input.
 
-## Offline-first philosophy
+## V1 Status
 
-Kiko V1 is planned around local Android capabilities: manual microphone input,
-Android SpeechRecognizer, Android TextToSpeech, a local intent parser, local
-memory, and direct device/app/contact actions. V1 has no login system, no cloud
-AI dependency, and no API keys.
+Kiko V1 core features passed real-device manual QA on a Samsung SM-A556E running
+Android 16. No major crash or major slow/weird behavior was found during the V1
+manual test pass.
 
-## V1 target
+## V1 Features
 
-The first production target is a compact phone-control assistant that can listen
-manually, understand a small local command set, ask clarifying questions when
-needed, speak responses with Android TTS, and run basic Android actions.
+- Manual mic voice input using Android SpeechRecognizer.
+- Voice replies using Android TextToSpeech.
+- Local deterministic parser for English, Hinglish, and Hindi command variants.
+- Installed app opening, including learned app aliases.
+- Contact calling with contact clarification and multi-number clarification.
+- Dialer fallback when `CALL_PHONE` permission is missing.
+- Direct calling when `CALL_PHONE` permission is granted.
+- Flashlight, media volume, brightness, alarm, and reminder actions.
+- Brightness handling that respects Android write-settings limitations.
+- Basic inexact local reminder scheduling with notification permission handling.
+- Room-backed local memory for preferences, aliases, reminders, and pending
+  clarification state.
+- Local app/contact alias learning after user approval.
+- Language/style mirroring for English, Hinglish, and Hindi responses.
+- Offline creator identity answer for Siddhartha Abhimanyu.
+- Settings screen for voice replies, language, reply style, personalization,
+  local memory clear/export/import, and permission guidance.
 
-## Current phase status
+## Offline-first Philosophy
 
-This branch contains the Android scaffold plus the V1 assistant foundation
-through Phase 6:
+Kiko V1 has no login system, no cloud AI dependency, no API keys, and no account
+sync. Contacts, installed app lists, reminders, preferences, and learned memory
+stay on the device. Full raw conversations are not stored by default, and JSON
+export/import is local and user-controlled.
 
-- Kotlin Android app
-- Jetpack Compose UI
-- Material 3 theme
-- Package name `com.skybots.kiko`
-- Minimum SDK 26
-- Basic dark premium placeholder screen
-- Permission foundation for microphone, contacts, phone calls, and camera
-- Manual mic voice input wrapper using Android SpeechRecognizer
-- Android TextToSpeech wrapper for spoken replies
-- Local assistant loop skeleton with parser and action contracts
-- Real installed-app detection and app launching
-- Local contact matching with call/dial behavior
-- In-memory clarification handling for ambiguous app/contact matches
-- Permission-aware contact flow with no cloud dependency
-- Offline device actions for flashlight, volume, brightness, alarms, and reminders
-- Multi-number contact clarification for contacts with more than one phone number
-- Room-backed local memory for preferences, aliases, pending actions, reminders,
-  and optional structured interaction summaries
-- Settings UI for voice replies, language preference, reply style,
-  personalization, memory clear/export/import, and creator/about details
-- Persisted clarification outcomes so approved app/contact aliases can be reused
-- Local JSON export/import for user-controlled memory backup
-- Privacy documentation covering local-first storage and V1 no-cloud behavior
-- Expanded deterministic parser coverage for English, Hinglish, and Hindi
-  command variants
-- Improved alarm/reminder date-time parsing for today/tomorrow, kal/aaj, and
-  subah/dopahar/shaam/raat phrases
-- Clarification cancel handling and safer waiting prompts
-- Local-only Logcat diagnostics with redaction
-- Manual real-device QA checklist and Room migration policy docs
+## Android Limitations
 
-See `docs/PRIVACY.md`, `docs/ANDROID_LIMITATIONS.md`,
-`docs/DB_MIGRATION_POLICY.md`, and `docs/V1_MANUAL_QA.md` for storage,
-platform constraints, migration policy, and manual QA coverage.
+Kiko uses Android platform APIs directly, so some behavior depends on device
+permissions, OEM policy, and installed system apps:
 
-Wake word detection, Accessibility Service automation, cloud AI, login, and API
-keys are not part of V1 scaffold work.
+- Direct calls need `CALL_PHONE`; without it Kiko opens the dialer.
+- System-wide brightness needs write-settings permission; without it Kiko adjusts
+  only its own screen brightness.
+- Reminder alarms are inexact and notification alerts need notification
+  permission on Android 13+.
+- Flashlight control can fail gracefully if hardware is unavailable or camera is
+  in use.
 
-## Build instructions
+See `docs/ANDROID_LIMITATIONS.md`, `docs/PRIVACY.md`,
+`docs/DB_MIGRATION_POLICY.md`, and `docs/V1_MANUAL_QA.md` for details.
+
+## Build Instructions
 
 Open the project in Android Studio, let Gradle sync, then run the app module.
 
-Command-line build:
+Command-line build on Windows:
 
 ```powershell
 .\gradlew.bat :app:assembleDebug
+```
+
+Run checks:
+
+```powershell
+.\gradlew.bat check
 ```
 
 On macOS or Linux:
 
 ```bash
 ./gradlew :app:assembleDebug
+./gradlew check
 ```
 
 The Android SDK must include compile SDK 35, and the build requires a Java 17
 compatible JDK.
 
-## Git workflow
+## Roadmap
 
-Development for this phase happens on `v1-core`.
+- V2: "Hey Kiko" wake phrase support after core runtime and battery behavior are
+  ready.
+- V3: Accessibility automation for deeper app interaction after safety and user
+  controls are mature.
+- Later: optional cloud AI and premium voice features, without weakening the
+  offline-first V1 foundation.
 
-- Do not push scaffold work to `main`.
-- Commit only working scaffold changes.
-- Push with `git push origin v1-core` after verification.
+## Git Workflow
+
+V1 development happened on `v1-core`. Final verified V1 code can be merged to
+`main` only after `:app:assembleDebug`, `check`, and safety scans pass. Do not
+force push.
