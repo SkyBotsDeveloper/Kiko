@@ -64,7 +64,8 @@ def notebook_json() -> dict:
         code("!python tools/wake_training/export_check.py tools/wake_training/output/hey_kiko.tflite"),
         markdown(
             "## Step 7: download model and report\n"
-            "The model currently needs an Android log-mel adapter before live wake detection works."
+            "Android can run Kiko log-mel models for pipeline testing, but this "
+            "sanity model still needs real-phone threshold and battery validation."
         ),
         code(
             "from google.colab import files\n"

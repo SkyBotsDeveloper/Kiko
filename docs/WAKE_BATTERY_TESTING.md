@@ -39,8 +39,8 @@ Watch for:
 - AudioRecord stops before SpeechRecognizer starts.
 - Disabling wake word stops the service and releases microphone resources.
 - Missing model does not crash the app.
-- Feature-input models are not used until the Android preprocessing adapter is
-  implemented.
+- Feature-input models use the Android log-mel adapter and do not run inference
+  more often than the configured stride.
 - Wake threshold and debounce are tuned conservatively before long idle tests.
 
 ## Candidate model tests

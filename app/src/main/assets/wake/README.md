@@ -13,5 +13,6 @@ app/src/main/assets/wake/hey_kiko.tflite
 ```
 
 If the model was exported by `tools/wake_training/train_hey_kiko.py`, it expects
-log-mel feature input. Android needs the matching feature adapter before that
-model can run real wake detection from live AudioRecord frames.
+log-mel feature input. Android includes a Kiko log-mel adapter for pipeline
+testing, but real wake quality still depends on balanced/quality training,
+threshold tuning, and battery testing.

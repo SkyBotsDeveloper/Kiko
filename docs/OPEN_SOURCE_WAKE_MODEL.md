@@ -70,14 +70,14 @@ Real voice samples can improve quality later, but they are optional.
 ## Android compatibility
 
 The training backend exports a log-mel feature model shaped like
-`[1, n_mels, frames, 1]`. Android currently has a raw-audio TFLite runner that
-accepts `[1, samples]`. Real wake detection therefore still needs one of:
+`[1, n_mels, frames, 1]`. Android now includes a Kotlin log-mel adapter for Kiko
+trained models and still keeps the raw `[1, samples]` path for future raw-audio
+models.
 
-- Kotlin log-mel preprocessing that matches Python exactly.
-- A TFLite model that includes preprocessing and accepts raw 16 kHz samples.
-
-The Android settings/model status path reports feature-input models as needing
-an adapter instead of pretending they are production-ready.
+The first sanity model uses `[1, 32, 118, 1]`. It is useful for testing the
+end-to-end Android inference path, but it is not a production-quality wake
+model. Balanced/quality models still need training, phone testing, and threshold
+tuning.
 
 See `docs/ANDROID_WAKE_MODEL_ADAPTER.md` for the Android log-mel adapter plan.
 

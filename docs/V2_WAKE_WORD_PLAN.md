@@ -62,11 +62,11 @@ No real model is committed in this phase. If the model is missing or invalid,
 the open-source engine reports a clear error and Kiko keeps manual mic plus
 Fake/Test wake available.
 
-The current Android runner supports a narrow raw-sample TFLite shape. The
-repo-local trainer exports a log-mel feature model, so Android reports it as
-`Feature adapter needed` until matching Kotlin preprocessing is implemented.
-Do not claim real wake detection works until model compatibility and real-phone
-tests pass.
+The Android runner now supports both raw-sample TFLite input and Kiko log-mel
+feature input. The repo-local sanity model shape `[1, 32, 118, 1]` can be loaded
+through the log-mel adapter for real-phone pipeline testing. Do not claim
+production wake detection until balanced/quality models, threshold tuning, false
+trigger testing, and battery testing pass.
 
 The next Android runtime step is documented in
 `docs/ANDROID_WAKE_MODEL_ADAPTER.md`.

@@ -5,6 +5,7 @@ enum class WakeEngineHealthStatus(
 ) {
     READY("Found"),
     RAW_AUDIO_COMPATIBLE("Raw-audio compatible"),
+    LOG_MEL_COMPATIBLE("Ready, log-mel"),
     FEATURE_INPUT_NEEDS_ADAPTER("Feature adapter needed"),
     MODEL_FOUND_COMPATIBILITY_UNKNOWN("Found, compatibility unknown"),
     DISABLED("Disabled"),
@@ -22,6 +23,7 @@ data class WakeEngineHealth(
     val isReady: Boolean
         get() = status == WakeEngineHealthStatus.READY ||
             status == WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE ||
+            status == WakeEngineHealthStatus.LOG_MEL_COMPATIBLE ||
             status == WakeEngineHealthStatus.MODEL_FOUND_COMPATIBILITY_UNKNOWN
 
     companion object {
@@ -32,6 +34,15 @@ data class WakeEngineHealth(
             WakeEngineHealth(
                 WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE,
                 "Model found and compatible with the current raw-audio Android runner.",
+            )
+
+        fun logMelCompatible(
+            nMels: Int,
+            frames: Int,
+        ): WakeEngineHealth =
+            WakeEngineHealth(
+                WakeEngineHealthStatus.LOG_MEL_COMPATIBLE,
+                "Model ready: log-mel input [$nMels, $frames].",
             )
 
         fun featureInputNeedsAdapter(): WakeEngineHealth =

@@ -57,10 +57,10 @@ not compatible with the current foundation runner, Kiko reports the problem and
 keeps manual mic plus Fake/Test wake available. Production wake detection also
 requires battery, heat, noise, and false-trigger testing on real phones.
 
-The repo-local trainer currently exports a log-mel feature model. Android can
-detect that model shape and show that a feature adapter is needed, but real wake
-detection requires matching on-device preprocessing before the model can be used
-from live AudioRecord frames.
+The repo-local trainer currently exports a log-mel feature model. Android now
+includes a Kiko log-mel adapter for pipeline testing, but real wake detection
+quality still depends on better training data, threshold tuning, and real-phone
+battery/noise validation.
 
 ## Diagnostics
 

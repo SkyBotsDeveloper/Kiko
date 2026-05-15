@@ -30,9 +30,11 @@ beginner-friendly Colab-first training path, so Kiko is not dependent on paid or
 broken hosted trainers. The first model can be trained from synthetic positives
 and free/generated negatives without manually recording the user's voice.
 
-The current training backend exports a log-mel TFLite classifier and documents
-the Android feature-adapter work still needed before real wake detection can be
-claimed.
+The current training backend exports a log-mel TFLite classifier. Android now
+has a log-mel adapter for Kiko-trained models, so the sanity model can be used
+for real-phone pipeline testing. It is still not a production-quality wake
+model until balanced/quality training, threshold tuning, false-trigger testing,
+and battery testing pass.
 
 ## V1 Features
 
@@ -115,8 +117,8 @@ compatible JDK.
 - V2: "Hey Kiko" wake phrase support. The current foundation adds the
   foreground service, fake engine, open-source AudioRecord/TFLite engine
   foundation, settings, notification, diagnostics, and tests. Real detection
-  requires a trained local `Hey Kiko` TFLite model plus matching Android
-  preprocessing if the model expects log-mel features.
+  requires a trained local `Hey Kiko` TFLite model, real-phone wake score
+  tuning, and battery validation.
 - V3: Accessibility automation for deeper app interaction after safety and user
   controls are mature.
 - Later: optional cloud AI and premium voice features, without weakening the

@@ -11,19 +11,21 @@ It does not accept raw PCM audio directly.
 
 ## Current Android State
 
-`TfliteWakeModelRunner` currently supports raw float32 PCM-shaped input:
+Android now supports two local TFLite input paths:
+
+- raw float32 PCM-shaped input: `[1, samples]`
+- Kiko log-mel feature input: `[1, n_mels, frames, 1]`
+
+For the first sanity model, the expected shape is:
 
 ```text
-[1, samples]
+[1, 32, 118, 1]
 ```
 
-If a log-mel feature model is installed, Android can detect the shape and report
-`Feature adapter needed`, but it must not claim real wake detection is ready.
+When this model is installed locally, settings should report `Ready, log-mel`.
 Manual mic and Fake/Test wake remain available.
 
-## Next Android Phase
-
-Implement and test:
+## Implemented Adapter
 
 - `WakeFeatureExtractor`
 - `LogMelFeatureExtractor`
@@ -36,8 +38,17 @@ Implement and test:
   - profile-specific `n_mels`
   - log-mel dB normalization to roughly `[-1.0, 1.0]`
 
-The Kotlin extractor must match Python output closely enough that wake scores
-from live phone audio are meaningful.
+The Kotlin extractor is an approximation of the Python/librosa training path:
+it uses a periodic Hann window, Slaney-style mel filters, power-to-dB scaling,
+and the same `[-1.0, 1.0]` normalization range. Exact parity with librosa still
+needs device-score validation and tuning.
+
+## Remaining Work
+
+- Compare Android feature tensors against Python for the same WAV fixtures.
+- Tune thresholds and debounce using real-phone wake scores.
+- Train balanced/quality models after the pipeline is verified.
+- Revisit performance if low-end phones show CPU or heat issues.
 
 ## Validation Before Claiming Real Wake
 

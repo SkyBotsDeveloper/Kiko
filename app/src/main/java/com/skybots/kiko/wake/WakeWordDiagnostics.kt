@@ -43,6 +43,18 @@ object WakeWordDiagnostics {
         DiagnosticsLogger.wakeEvent("wake_model_status", status)
     }
 
+    fun modelInputShape(shape: String) {
+        DiagnosticsLogger.wakeEvent("wake_model_input_shape", shape)
+    }
+
+    fun featureTypeSelected(featureType: String) {
+        DiagnosticsLogger.wakeEvent("wake_feature_type_selected", featureType)
+    }
+
+    fun modelReady(status: String) {
+        DiagnosticsLogger.wakeEvent("wake_model_ready", status)
+    }
+
     fun audioSourceStart() {
         DiagnosticsLogger.wakeEvent("wake_audio_source_start")
     }

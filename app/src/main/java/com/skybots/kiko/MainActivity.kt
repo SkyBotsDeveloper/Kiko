@@ -62,6 +62,8 @@ import com.skybots.kiko.wake.WakeWordEvent
 import com.skybots.kiko.wake.WakeWordRuntime
 import com.skybots.kiko.wake.WakeWordServiceController
 import com.skybots.kiko.wake.WakeWordSensitivity
+import com.skybots.kiko.wake.opensource.OpenSourceWakeConfig
+import com.skybots.kiko.wake.opensource.TfliteWakeModelRunner
 import com.skybots.kiko.wake.opensource.WakeModelAssetManager
 
 class MainActivity : ComponentActivity() {
@@ -174,7 +176,7 @@ private fun KikoApp() {
         mutableStateOf(wakeWordController.getStatus())
     }
     var wakeModelHealth by remember {
-        mutableStateOf(wakeModelAssetManager.health())
+        mutableStateOf(TfliteWakeModelRunner.inspectModelHealth(wakeModelAssetManager, OpenSourceWakeConfig()))
     }
     var pendingWakeEnableRequest by remember {
         mutableStateOf(false)
@@ -190,7 +192,7 @@ private fun KikoApp() {
 
     fun refreshWakeWordStatus() {
         wakeWordStatus = wakeWordController.getStatus()
-        wakeModelHealth = wakeModelAssetManager.health()
+        wakeModelHealth = TfliteWakeModelRunner.inspectModelHealth(wakeModelAssetManager, OpenSourceWakeConfig())
     }
 
     fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {

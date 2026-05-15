@@ -36,15 +36,14 @@ calling the TFLite wake classifier.
 [1, n_mels, frames, 1]
 ```
 
-That is a feature tensor, not raw waveform audio. The Android
-`TfliteWakeModelRunner` can detect this and report `Feature adapter needed`,
-but it cannot run real detection from this model until the same log-mel
-preprocessing is implemented in Kotlin or bundled into the TFLite model.
+That is a feature tensor, not raw waveform audio. Android now includes a
+Kiko log-mel feature adapter and can run the sanity model shape
+`[1, 32, 118, 1]` through `TfliteWakeModelRunner`.
 
-See `docs/ANDROID_WAKE_MODEL_ADAPTER.md` for the next Android implementation
-plan. Until that adapter exists, a trained model can be exported, inspected, and
-installed for status testing, but live wake detection should not be presented as
-ready.
+See `docs/ANDROID_WAKE_MODEL_ADAPTER.md` for implementation details and the
+remaining validation plan. A trained model can be exported, inspected, and
+installed for pipeline testing, but production wake detection should not be
+claimed until real-device accuracy and battery testing pass.
 
 Python preprocessing details:
 
@@ -73,7 +72,7 @@ The report prints input/output tensor details and one of these statuses:
 
 - `raw-audio-compatible`: can be used by the current Android runner.
 - `feature-input-needs-adapter`: model found, but Android preprocessing is
-  required.
+  required for that shape/model family.
 - `unknown`: manual review needed.
 - `invalid`: missing, empty, or not loadable.
 

@@ -11,12 +11,16 @@ data class OpenSourceWakeConfig(
     val requiredConsecutiveFrames: Int = 2,
     val debounceMillis: Long = 2_500L,
     val inferenceThreads: Int = 1,
+    // Log-mel extraction is heavier than raw-sample copy. Running inference every
+    // few AudioRecord frames keeps idle CPU lower while still checking the rolling
+    // 1200 ms wake window often enough for a sanity-model wake flow.
+    val logMelInferenceStrideFrames: Int = 4,
 ) {
     companion object {
         const val MODEL_ASSET_PATH = "wake/hey_kiko.tflite"
-        const val LOW_THRESHOLD = 0.82f
-        const val BALANCED_THRESHOLD = 0.74f
-        const val HIGH_THRESHOLD = 0.64f
+        const val LOW_THRESHOLD = 0.65f
+        const val BALANCED_THRESHOLD = 0.50f
+        const val HIGH_THRESHOLD = 0.40f
 
         fun fromSensitivity(sensitivity: WakeWordSensitivity): OpenSourceWakeConfig =
             OpenSourceWakeConfig(

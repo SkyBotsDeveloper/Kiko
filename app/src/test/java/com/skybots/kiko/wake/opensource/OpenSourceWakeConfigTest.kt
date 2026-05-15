@@ -11,7 +11,8 @@ class OpenSourceWakeConfigTest {
 
         assertTrue(config.sampleRateHz == 16_000)
         assertTrue(config.frameSizeSamples > 0)
-        assertTrue(config.threshold >= 0.7f)
+        assertTrue(config.threshold == 0.5f)
+        assertTrue(config.logMelInferenceStrideFrames >= 1)
         assertTrue(config.modelAssetPath.endsWith("hey_kiko.tflite"))
     }
 
