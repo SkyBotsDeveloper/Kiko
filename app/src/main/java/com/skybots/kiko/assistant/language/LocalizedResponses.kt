@@ -115,6 +115,185 @@ object LocalizedResponses {
         }
     }
 
+    fun multipleContactNumbers(
+        contactName: String,
+        numberLabels: List<String>,
+        languageHint: LanguageHint,
+    ): String {
+        val listText = joinNames(numberLabels, languageHint)
+        return when (languageHint) {
+            LanguageHint.HINGLISH -> "$contactName ke ${numberLabels.size} numbers mile: $listText. Kaunsa call karu?"
+            LanguageHint.HINDI -> "$contactName के ${numberLabels.size} numbers मिले: $listText। कौन सा call करूँ?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I found ${numberLabels.size} numbers for $contactName: $listText. Which one should I call?"
+        }
+    }
+
+    fun flashlightOn(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Flashlight on kar raha hoon."
+            LanguageHint.HINDI -> "Flashlight चालू कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Turning flashlight on."
+        }
+
+    fun flashlightOff(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Flashlight off kar raha hoon."
+            LanguageHint.HINDI -> "Flashlight बंद कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Turning flashlight off."
+        }
+
+    fun flashlightUnavailable(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Is phone me available flashlight nahi mili."
+            LanguageHint.HINDI -> "इस phone में available flashlight नहीं मिली।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "This phone does not have an available flashlight."
+        }
+
+    fun flashlightError(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Flashlight abhi control nahi ho payi."
+            LanguageHint.HINDI -> "Flashlight अभी control नहीं हो पाई।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I could not control the flashlight right now."
+        }
+
+    fun volumePercent(
+        percent: Int,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Volume $percent percent kar raha hoon."
+            LanguageHint.HINDI -> "Volume $percent percent कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Setting volume to $percent percent."
+        }
+
+    fun volumeIncrease(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Volume badha raha hoon."
+            LanguageHint.HINDI -> "Volume बढ़ा रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Increasing volume."
+        }
+
+    fun volumeDecrease(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Volume kam kar raha hoon."
+            LanguageHint.HINDI -> "Volume कम कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Decreasing volume."
+        }
+
+    fun volumeFixed(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Is device par volume fixed hai."
+            LanguageHint.HINDI -> "इस device पर volume fixed है।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "This device has fixed volume."
+        }
+
+    fun brightnessPercent(
+        percent: Int,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Brightness $percent percent kar raha hoon."
+            LanguageHint.HINDI -> "Brightness $percent percent कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Setting brightness to $percent percent."
+        }
+
+    fun brightnessIncrease(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Brightness badha raha hoon."
+            LanguageHint.HINDI -> "Brightness बढ़ा रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Increasing brightness."
+        }
+
+    fun brightnessDecrease(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Brightness kam kar raha hoon."
+            LanguageHint.HINDI -> "Brightness कम कर रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Decreasing brightness."
+        }
+
+    fun appBrightnessOnly(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Abhi main Kiko screen ki brightness adjust kar sakta hoon. Puri phone brightness ke liye extra permission chahiye."
+            LanguageHint.HINDI -> "अभी मैं Kiko screen की brightness adjust कर सकता हूँ। पूरी phone brightness के लिए extra permission चाहिए।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I can adjust Kiko's screen brightness now. System-wide brightness needs extra permission."
+        }
+
+    fun alarmSet(
+        displayTime: String,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "$displayTime ke liye alarm laga raha hoon."
+            LanguageHint.HINDI -> "$displayTime के लिए alarm लगा रहा हूँ।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Setting alarm for $displayTime."
+        }
+
+    fun alarmNeedsTime(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Alarm kis time ka lagana hai?"
+            LanguageHint.HINDI -> "Alarm किस time का लगाना है?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "What time should I set the alarm for?"
+        }
+
+    fun alarmLaunchFailed(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Alarm app open nahi ho paya."
+            LanguageHint.HINDI -> "Alarm app open नहीं हो पाया।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "I could not open the alarm app."
+        }
+
+    fun reminderSaved(
+        displayTime: String,
+        message: String,
+        languageHint: LanguageHint,
+    ): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "$displayTime ke liye reminder save kar diya: $message."
+            LanguageHint.HINDI -> "$displayTime के लिए reminder save कर दिया: $message."
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "Reminder saved for $displayTime: $message."
+        }
+
+    fun reminderNeedsMessage(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Kis cheez ka reminder lagana hai?"
+            LanguageHint.HINDI -> "किस चीज़ का reminder लगाना है?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "What should I remind you about?"
+        }
+
+    fun reminderNeedsTime(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> "Reminder kis time ka lagana hai?"
+            LanguageHint.HINDI -> "Reminder किस time का लगाना है?"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> "What time should I set the reminder for?"
+        }
+
+    fun notificationPermissionNeeded(languageHint: LanguageHint): String =
+        when (languageHint) {
+            LanguageHint.HINGLISH -> " Notification ke liye permission chahiye."
+            LanguageHint.HINDI -> " Notification के लिए permission चाहिए।"
+            LanguageHint.ENGLISH,
+            LanguageHint.SYSTEM_DEFAULT -> " Notification permission is needed to alert you."
+        }
+
     fun clarificationRetry(
         type: PendingActionType,
         candidateNames: List<String>,
@@ -123,6 +302,11 @@ object LocalizedResponses {
         when (type) {
             PendingActionType.OPEN_APP -> multipleApps(languageHint)
             PendingActionType.CALL_CONTACT -> multipleContacts(candidateNames, languageHint)
+            PendingActionType.CALL_CONTACT_NUMBER -> multipleContactNumbers(
+                contactName = candidateNames.firstOrNull()?.substringBefore(" ") ?: "Contact",
+                numberLabels = candidateNames,
+                languageHint = languageHint,
+            )
         }
 
     fun clarificationCleared(languageHint: LanguageHint): String =

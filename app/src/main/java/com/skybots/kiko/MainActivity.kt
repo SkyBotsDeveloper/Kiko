@@ -1,6 +1,7 @@
 package com.skybots.kiko
 
 import android.Manifest
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,6 +22,20 @@ import com.skybots.kiko.actions.contacts.AndroidContactsRepository
 import com.skybots.kiko.actions.contacts.AndroidPhoneActionLauncher
 import com.skybots.kiko.actions.contacts.ContactMatcher
 import com.skybots.kiko.actions.contacts.RealContactActionHandler
+import com.skybots.kiko.actions.device.AlarmActionHandler
+import com.skybots.kiko.actions.device.AlarmParser
+import com.skybots.kiko.actions.device.AndroidAlarmLauncher
+import com.skybots.kiko.actions.device.AndroidBrightnessController
+import com.skybots.kiko.actions.device.AndroidFlashlightController
+import com.skybots.kiko.actions.device.AndroidLocalReminderScheduler
+import com.skybots.kiko.actions.device.AndroidVolumeController
+import com.skybots.kiko.actions.device.BrightnessActionHandler
+import com.skybots.kiko.actions.device.FlashlightActionHandler
+import com.skybots.kiko.actions.device.RealDeviceActionHandler
+import com.skybots.kiko.actions.device.ReminderActionHandler
+import com.skybots.kiko.actions.device.ReminderParser
+import com.skybots.kiko.actions.device.SharedPreferencesReminderRepository
+import com.skybots.kiko.actions.device.VolumeActionHandler
 import com.skybots.kiko.assistant.AssistantOrchestrator
 import com.skybots.kiko.assistant.AssistantRuntimeState
 import com.skybots.kiko.assistant.clarification.ClarificationManager
@@ -48,6 +63,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun KikoApp() {
     val context = LocalContext.current
+    val activity = context as Activity
     val permissionManager = remember(context) {
         PermissionManager(context)
     }
@@ -74,6 +90,29 @@ private fun KikoApp() {
                 permissionChecker = permissionManager,
                 phoneActionLauncher = AndroidPhoneActionLauncher(context),
                 clarificationManager = clarificationManager,
+            ),
+            deviceActionHandler = RealDeviceActionHandler(
+                flashlightActionHandler = FlashlightActionHandler(
+                    flashlightController = AndroidFlashlightController(context),
+                ),
+                volumeActionHandler = VolumeActionHandler(
+                    volumeController = AndroidVolumeController(context),
+                ),
+                brightnessActionHandler = BrightnessActionHandler(
+                    brightnessController = AndroidBrightnessController(activity),
+                ),
+                alarmActionHandler = AlarmActionHandler(
+                    alarmParser = AlarmParser(),
+                    alarmLauncher = AndroidAlarmLauncher(context),
+                ),
+                reminderActionHandler = ReminderActionHandler(
+                    reminderParser = ReminderParser(),
+                    reminderRepository = SharedPreferencesReminderRepository(context),
+                    reminderScheduler = AndroidLocalReminderScheduler(
+                        context = context,
+                        permissionChecker = permissionManager,
+                    ),
+                ),
             ),
             clarificationManager = clarificationManager,
         )
@@ -138,10 +177,30 @@ private fun KikoApp() {
         }
     }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        refreshPermissionStatuses()
+        uiState = if (granted) {
+            uiState.copy(
+                runtimeState = AssistantRuntimeState.IDLE,
+                statusMessage = "Notification permission granted.",
+            )
+        } else {
+            uiState.copy(
+                runtimeState = AssistantRuntimeState.ERROR,
+                statusMessage = "Notification permission denied.",
+            )
+        }
+    }
+
     fun requestActionPermission(permission: KikoPermission?) {
         when (permission) {
             KikoPermission.READ_CONTACTS -> contactsPermissionLauncher.launch(
                 Manifest.permission.READ_CONTACTS,
+            )
+            KikoPermission.POST_NOTIFICATIONS -> notificationPermissionLauncher.launch(
+                Manifest.permission.POST_NOTIFICATIONS,
             )
             null,
             KikoPermission.RECORD_AUDIO,
@@ -153,8 +212,8 @@ private fun KikoApp() {
     fun processTranscript(transcript: String) {
         uiState = uiState.copy(
             transcript = transcript,
-            runtimeState = AssistantRuntimeState.PROCESSING,
-            statusMessage = "Processing locally.",
+            runtimeState = AssistantRuntimeState.EXECUTING,
+            statusMessage = "Executing locally.",
         )
 
         val result = orchestrator.processTranscript(transcript)

@@ -339,6 +339,7 @@ private val AssistantRuntimeState.label: String
         AssistantRuntimeState.IDLE -> "Idle"
         AssistantRuntimeState.LISTENING -> "Listening"
         AssistantRuntimeState.PROCESSING -> "Processing"
+        AssistantRuntimeState.EXECUTING -> "Executing"
         AssistantRuntimeState.SPEAKING -> "Speaking"
         AssistantRuntimeState.ERROR -> "Error"
     }

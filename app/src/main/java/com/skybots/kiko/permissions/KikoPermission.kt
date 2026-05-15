@@ -22,4 +22,8 @@ enum class KikoPermission(
         androidPermission = Manifest.permission.CAMERA,
         displayName = "Camera / flashlight",
     ),
+    POST_NOTIFICATIONS(
+        androidPermission = Manifest.permission.POST_NOTIFICATIONS,
+        displayName = "Notifications",
+    ),
 }

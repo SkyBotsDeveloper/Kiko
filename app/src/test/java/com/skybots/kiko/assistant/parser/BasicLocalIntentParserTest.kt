@@ -1,6 +1,7 @@
 package com.skybots.kiko.assistant.parser
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class BasicLocalIntentParserTest {
@@ -66,5 +67,44 @@ class BasicLocalIntentParserTest {
         val intent = parser.parse("who created you")
 
         assertEquals(IntentType.CREATOR_IDENTITY, intent.type)
+    }
+
+    @Test
+    fun torchJalaoMapsToFlashlightOn() {
+        val intent = parser.parse("torch jalao")
+
+        assertEquals(IntentType.FLASHLIGHT_ON, intent.type)
+    }
+
+    @Test
+    fun torchBandKaroMapsToFlashlightOff() {
+        val intent = parser.parse("torch band karo")
+
+        assertEquals(IntentType.FLASHLIGHT_OFF, intent.type)
+    }
+
+    @Test
+    fun volumeCommandExtractsPercent() {
+        val intent = parser.parse("volume 50 kar do")
+
+        assertEquals(IntentType.SET_VOLUME, intent.type)
+        assertEquals(50, intent.numericValue)
+        assertNull(intent.adjustmentDirection)
+    }
+
+    @Test
+    fun volumeBadhaoMapsToIncrease() {
+        val intent = parser.parse("volume badhao")
+
+        assertEquals(IntentType.SET_VOLUME, intent.type)
+        assertEquals(AdjustmentDirection.INCREASE, intent.adjustmentDirection)
+    }
+
+    @Test
+    fun brightnessCommandExtractsPercent() {
+        val intent = parser.parse("brightness 70 karo")
+
+        assertEquals(IntentType.SET_BRIGHTNESS, intent.type)
+        assertEquals(70, intent.numericValue)
     }
 }

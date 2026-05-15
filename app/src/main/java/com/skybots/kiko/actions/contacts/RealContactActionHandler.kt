@@ -64,6 +64,23 @@ class RealContactActionHandler(
             )
         }
 
+        if (candidate.id.startsWith(NUMBER_CANDIDATE_PREFIX)) {
+            val phoneSelection = PhoneNumberSelection.fromCandidate(candidate)
+            return startCallOrDial(
+                contact = ContactModel(
+                    contactId = null,
+                    displayName = phoneSelection.displayName,
+                    phoneNumbers = listOf(
+                        ContactPhoneNumber(
+                            number = phoneSelection.number,
+                            label = phoneSelection.label,
+                        ),
+                    ),
+                ),
+                languageHint = languageHint,
+            )
+        }
+
         val contact = contactsRepository.getContacts()
             .firstOrNull { it.idForClarification() == candidate.id }
             ?: ContactModel(
@@ -83,6 +100,10 @@ class RealContactActionHandler(
         contact: ContactModel,
         languageHint: LanguageHint,
     ): AssistantActionResult {
+        if (contact.phoneNumbers.size > 1) {
+            return askWhichNumber(contact, languageHint)
+        }
+
         val number = contact.primaryNumber()
             ?: return AssistantActionResult(
                 response = LocalizedResponses.contactHasNoNumber(contact.displayName, languageHint),
@@ -114,4 +135,62 @@ class RealContactActionHandler(
 
     private fun ContactModel.idForClarification(): String =
         listOfNotNull(contactId, displayName, primaryNumber()).joinToString("|")
+
+    private fun askWhichNumber(
+        contact: ContactModel,
+        languageHint: LanguageHint,
+    ): AssistantActionResult {
+        val candidates = contact.phoneNumbers.mapIndexed { index, phoneNumber ->
+            val label = phoneNumber.label?.takeIf { it.isNotBlank() } ?: "Number ${index + 1}"
+            ClarificationCandidate(
+                id = listOf(
+                    NUMBER_CANDIDATE_PREFIX,
+                    contact.displayName,
+                    phoneNumber.number,
+                    label,
+                ).joinToString("|"),
+                label = "${contact.displayName} $label",
+                subtitle = phoneNumber.number,
+            )
+        }
+        clarificationManager.setPending(
+            type = PendingActionType.CALL_CONTACT_NUMBER,
+            candidates = candidates,
+            languageHint = languageHint,
+        )
+
+        return AssistantActionResult(
+            response = LocalizedResponses.multipleContactNumbers(
+                contactName = contact.displayName,
+                numberLabels = contact.phoneNumbers.mapIndexed { index, phoneNumber ->
+                    phoneNumber.label?.takeIf { it.isNotBlank() } ?: "Number ${index + 1}"
+                },
+                languageHint = languageHint,
+            ),
+        )
+    }
+
+    private data class PhoneNumberSelection(
+        val displayName: String,
+        val number: String,
+        val label: String,
+    ) {
+        companion object {
+            fun fromCandidate(candidate: ClarificationCandidate): PhoneNumberSelection {
+                val parts = candidate.id.split("|")
+                val contactName = parts.getOrNull(1).orEmpty()
+                val number = parts.getOrNull(2).orEmpty()
+                val label = parts.getOrNull(3).orEmpty().ifBlank { candidate.label }
+                return PhoneNumberSelection(
+                    displayName = "$contactName $label".trim(),
+                    number = number,
+                    label = label,
+                )
+            }
+        }
+    }
+
+    private companion object {
+        const val NUMBER_CANDIDATE_PREFIX = "number"
+    }
 }

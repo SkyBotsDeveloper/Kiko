@@ -116,13 +116,18 @@ class AssistantOrchestrator(
                 candidate = candidate,
                 languageHint = pendingAction.languageHint,
             )
+            PendingActionType.CALL_CONTACT_NUMBER -> contactActionHandler.handleClarification(
+                candidate = candidate,
+                languageHint = pendingAction.languageHint,
+            )
         }
 
         return AssistantResult(
             intent = AssistantIntent(
                 type = when (pendingAction.type) {
                     PendingActionType.OPEN_APP -> IntentType.OPEN_APP
-                    PendingActionType.CALL_CONTACT -> IntentType.CALL_CONTACT
+                    PendingActionType.CALL_CONTACT,
+                    PendingActionType.CALL_CONTACT_NUMBER -> IntentType.CALL_CONTACT
                 },
                 rawText = candidate.label,
                 target = candidate.label,

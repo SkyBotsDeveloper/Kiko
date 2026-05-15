@@ -1,7 +1,9 @@
 package com.skybots.kiko.actions.contacts
 
 import com.skybots.kiko.assistant.clarification.ClarificationManager
+import com.skybots.kiko.assistant.AssistantOrchestrator
 import com.skybots.kiko.assistant.language.LanguageHint
+import com.skybots.kiko.assistant.parser.BasicLocalIntentParser
 import com.skybots.kiko.assistant.parser.AssistantIntent
 import com.skybots.kiko.assistant.parser.IntentType
 import com.skybots.kiko.permissions.PermissionChecker
@@ -63,6 +65,71 @@ class RealContactActionHandlerTest {
         assertTrue(clarificationManager.hasPending())
     }
 
+    @Test
+    fun contactWithMultipleNumbersAsksClarification() {
+        val clarificationManager = ClarificationManager()
+        val handler = handler(
+            contacts = listOf(
+                ContactModel(
+                    contactId = "mummy",
+                    displayName = "Mummy",
+                    phoneNumbers = listOf(
+                        ContactPhoneNumber(number = "111", label = "Mobile"),
+                        ContactPhoneNumber(number = "222", label = "Home"),
+                    ),
+                ),
+            ),
+            clarificationManager = clarificationManager,
+        )
+
+        val result = handler.handle(
+            AssistantIntent(
+                type = IntentType.CALL_CONTACT,
+                rawText = "call mummy",
+                contactQuery = "mummy",
+                languageHint = LanguageHint.HINGLISH,
+            ),
+        )
+
+        assertEquals("Mummy ke 2 numbers mile: Mobile aur Home. Kaunsa call karu?", result.response)
+        assertTrue(clarificationManager.hasPending())
+    }
+
+    @Test
+    fun followUpNumberSelectionResolvesPendingCall() {
+        val clarificationManager = ClarificationManager()
+        val launcher = FakePhoneActionLauncher()
+        val contactHandler = handler(
+            contacts = listOf(
+                ContactModel(
+                    contactId = "mummy",
+                    displayName = "Mummy",
+                    phoneNumbers = listOf(
+                        ContactPhoneNumber(number = "111", label = "Mobile"),
+                        ContactPhoneNumber(number = "222", label = "Home"),
+                    ),
+                ),
+            ),
+            permissionChecker = FakePermissionChecker(
+                contactsGranted = true,
+                callGranted = true,
+            ),
+            launcher = launcher,
+            clarificationManager = clarificationManager,
+        )
+        val orchestrator = AssistantOrchestrator(
+            intentParser = BasicLocalIntentParser(),
+            contactActionHandler = contactHandler,
+            clarificationManager = clarificationManager,
+        )
+
+        orchestrator.processTranscript("mummy ko call karo")
+        val result = orchestrator.processTranscript("Home")
+
+        assertEquals("Mummy Home ko call kar raha hoon.", result.response)
+        assertEquals("222", launcher.calledNumber)
+    }
+
     private fun handler(
         contacts: List<ContactModel>,
         permissionChecker: PermissionChecker = FakePermissionChecker(),
@@ -99,6 +166,8 @@ class RealContactActionHandlerTest {
         override fun hasReadContactsPermission(): Boolean = contactsGranted
 
         override fun hasCallPhonePermission(): Boolean = callGranted
+
+        override fun hasPostNotificationsPermission(): Boolean = true
     }
 
     private class FakePhoneActionLauncher : PhoneActionLauncher {

@@ -97,6 +97,21 @@ class AssistantOrchestratorTest {
         assertTrue(result.response.isNotBlank())
     }
 
+    @Test
+    fun deviceIntentRoutesToDeviceHandler() {
+        val orchestrator = AssistantOrchestrator(
+            intentParser = BasicLocalIntentParser(),
+            deviceActionHandler = object : DeviceActionHandler {
+                override fun handle(intent: AssistantIntent): AssistantActionResult =
+                    AssistantActionResult("device routed")
+            },
+        )
+
+        val result = orchestrator.processTranscript("torch jalao")
+
+        assertEquals("device routed", result.response)
+    }
+
     private fun testOrchestrator(): AssistantOrchestrator =
         AssistantOrchestrator(
             intentParser = BasicLocalIntentParser(),

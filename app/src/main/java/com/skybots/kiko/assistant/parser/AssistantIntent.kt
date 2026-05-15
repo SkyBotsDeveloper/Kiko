@@ -9,5 +9,7 @@ data class AssistantIntent(
     val value: String? = null,
     val appQuery: String? = null,
     val contactQuery: String? = null,
+    val numericValue: Int? = null,
+    val adjustmentDirection: AdjustmentDirection? = null,
     val languageHint: LanguageHint = LanguageHint.SYSTEM_DEFAULT,
 )

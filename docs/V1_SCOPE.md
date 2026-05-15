@@ -38,6 +38,16 @@ Phase 3 foundation completed:
 - Local English, Hinglish, and Hindi response selection for app/contact actions
 - No cloud dependency for app opening or contact calling
 
+Phase 4 foundation completed:
+
+- Flashlight on/off support through CameraManager with unavailable/error handling
+- Media volume set/increase/decrease support through AudioManager
+- Brightness set/increase/decrease support with app-window fallback when system write settings is unavailable
+- Alarm creation through Android AlarmClock intents
+- Local reminder storage and inexact notification scheduling when notification permission is available
+- Multi-number contact clarification for contacts with Mobile/Home/etc. numbers
+- Device-control responses in English, Hinglish, and Hindi
+
 Out of scope for V1:
 
 - Cloud AI dependency

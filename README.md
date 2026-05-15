@@ -36,11 +36,13 @@ foundation:
 - Local contact matching with call/dial behavior
 - In-memory clarification handling for ambiguous app/contact matches
 - Permission-aware contact flow with no cloud dependency
+- Offline device actions for flashlight, volume, brightness, alarms, and reminders
+- Multi-number contact clarification for contacts with more than one phone number
 
-Future behavior such as richer contact selection, local memory, full device
-controls, and better language mirroring will be expanded across later phases.
-Wake word detection, Accessibility Service automation, cloud AI, login, and API
-keys are not part of V1 scaffold work.
+Future behavior such as richer local memory, more device controls, and better
+language mirroring will be expanded across later phases. Wake word detection,
+Accessibility Service automation, cloud AI, login, and API keys are not part of
+V1 scaffold work.
 
 ## Build instructions
 
