@@ -26,7 +26,7 @@ class InMemoryMemoryRepositoryTest {
         assertFalse(preferences.saveInteractionSummaries)
         assertFalse(preferences.wakeWordEnabled)
         assertEquals("Hey Kiko", preferences.wakeWordPhrase)
-        assertEquals("fake", preferences.wakeWordEngine)
+        assertEquals("open_source", preferences.wakeWordEngine)
     }
 
     @Test

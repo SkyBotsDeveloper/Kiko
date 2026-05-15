@@ -31,6 +31,13 @@ secrets.*
 *api_key*
 *apikey*
 
+# Wake-word models: commit only intentionally open-source models.
+app/src/main/assets/wake/*.tflite
+app/src/main/assets/wake/*.ppn
+app/src/main/assets/wake/*.pv
+!app/src/main/assets/wake/README.md
+!app/src/main/assets/wake/.gitkeep
+
 # Kotlin
 *.kotlin_module
 

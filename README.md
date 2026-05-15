@@ -14,12 +14,17 @@ manual test pass.
 
 The `v2-wake-word` branch adds the safe foundation for future `Hey Kiko` wake
 support. Wake word is optional and off by default, runs only through a visible
-foreground service, and currently uses a fake/manual test engine so no Picovoice
-key or private wake model is required.
+foreground service, and uses a free/open-source local direction. Kiko
+intentionally does not use Picovoice Porcupine, Picovoice SDKs, Picovoice
+AccessKeys, or `.ppn` / `.pv` files.
 
 The foundation does not add cloud AI, login, Accessibility Service automation,
 or always-on Android SpeechRecognizer. Full voice recognition starts only after
 manual mic input or a wake-detected event.
+
+The open-source local engine expects a trained TFLite model at
+`app/src/main/assets/wake/hey_kiko.tflite`. Until that model is available, Kiko
+reports the model as missing and keeps manual mic plus Fake/Test wake available.
 
 ## V1 Features
 
@@ -65,7 +70,9 @@ permissions, OEM policy, and installed system apps:
 
 See `docs/ANDROID_LIMITATIONS.md`, `docs/PRIVACY.md`,
 `docs/DB_MIGRATION_POLICY.md`, `docs/V1_MANUAL_QA.md`, and
-`docs/V2_WAKE_WORD_PLAN.md` for details.
+`docs/V2_WAKE_WORD_PLAN.md` for details. Wake-model training and battery testing
+notes live in `docs/OPEN_SOURCE_WAKE_MODEL.md` and
+`docs/WAKE_BATTERY_TESTING.md`.
 
 ## Build Instructions
 
@@ -96,9 +103,9 @@ compatible JDK.
 ## Roadmap
 
 - V2: "Hey Kiko" wake phrase support. The current foundation adds the
-  foreground service, fake engine, settings, notification, diagnostics, and
-  tests. Real Porcupine integration is planned next and must not commit any real
-  AccessKey or private model.
+  foreground service, fake engine, open-source AudioRecord/TFLite engine
+  foundation, settings, notification, diagnostics, and tests. Real detection
+  requires a trained local `Hey Kiko` TFLite model.
 - V3: Accessibility automation for deeper app interaction after safety and user
   controls are mature.
 - Later: optional cloud AI and premium voice features, without weakening the

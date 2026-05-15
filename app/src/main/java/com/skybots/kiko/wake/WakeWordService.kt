@@ -13,6 +13,7 @@ import android.os.VibratorManager
 import com.skybots.kiko.memory.KikoDatabase
 import com.skybots.kiko.memory.RoomMemoryRepository
 import com.skybots.kiko.permissions.PermissionManager
+import com.skybots.kiko.wake.opensource.OpenSourceWakeWordEngine
 
 class WakeWordService : Service() {
     private lateinit var notificationHelper: WakeWordNotificationHelper
@@ -66,6 +67,9 @@ class WakeWordService : Service() {
         }
 
         val config = WakeWordConfig.fromPreferences(preferences)
+        if (config.engine == WakeWordConfig.ENGINE_OPEN_SOURCE) {
+            WakeWordDiagnostics.openSourceEngineSelected()
+        }
         notificationHelper.ensureChannel()
         runCatching {
             val notification = notificationHelper.listeningNotification(config.phrase)
@@ -147,6 +151,10 @@ class WakeWordService : Service() {
             is WakeWordEvent.Error -> {
                 WakeWordDiagnostics.error(event.message)
                 updateState(WakeWordEngineState.Error)
+                engine?.release()
+                engine = null
+                stopForegroundCompat()
+                stopSelf()
             }
         }
     }
@@ -154,6 +162,11 @@ class WakeWordService : Service() {
     private fun createEngine(config: WakeWordConfig): WakeWordEngine =
         when (config.engine) {
             WakeWordConfig.ENGINE_FAKE -> FakeWakeWordEngine()
+            WakeWordConfig.ENGINE_OPEN_SOURCE -> OpenSourceWakeWordEngine(
+                context = this,
+                sensitivity = config.sensitivity,
+                permissionManager = PermissionManager(this),
+            )
             else -> FakeWakeWordEngine()
         }
 

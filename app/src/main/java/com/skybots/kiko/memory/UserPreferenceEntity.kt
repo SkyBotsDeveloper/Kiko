@@ -22,7 +22,7 @@ data class UserPreferenceEntity(
     @ColumnInfo(defaultValue = "'Hey Kiko'")
     val wakeWordPhrase: String = WakeWordConfig.DEFAULT_PHRASE,
     @ColumnInfo(defaultValue = "'fake'")
-    val wakeWordEngine: String = WakeWordConfig.ENGINE_FAKE,
+    val wakeWordEngine: String = WakeWordConfig.ENGINE_OPEN_SOURCE,
     @ColumnInfo(defaultValue = "'BALANCED'")
     val wakeWordSensitivity: String = WakeWordSensitivity.BALANCED.name,
     @ColumnInfo(defaultValue = "'Disabled'")

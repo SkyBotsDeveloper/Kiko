@@ -12,7 +12,7 @@ class WakeWordConfigTest {
 
         assertFalse(config.enabled)
         assertEquals("Hey Kiko", config.phrase)
-        assertEquals("fake", config.engine)
+        assertEquals("open_source", config.engine)
         assertEquals(WakeWordSensitivity.BALANCED, config.sensitivity)
     }
 
@@ -27,7 +27,7 @@ class WakeWordConfigTest {
 
         assertEquals(true, restored.enabled)
         assertEquals("Hey Kiko", restored.phrase)
-        assertEquals("fake", restored.engine)
+        assertEquals("open_source", restored.engine)
         assertEquals(WakeWordSensitivity.HIGH, restored.sensitivity)
     }
 }

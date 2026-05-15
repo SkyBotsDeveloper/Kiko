@@ -62,6 +62,7 @@ import com.skybots.kiko.wake.WakeWordEvent
 import com.skybots.kiko.wake.WakeWordRuntime
 import com.skybots.kiko.wake.WakeWordServiceController
 import com.skybots.kiko.wake.WakeWordSensitivity
+import com.skybots.kiko.wake.opensource.WakeModelAssetManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -166,8 +167,14 @@ private fun KikoApp() {
             memoryRepository = memoryRepository,
         )
     }
+    val wakeModelAssetManager = remember(context) {
+        WakeModelAssetManager(context)
+    }
     var wakeWordStatus by remember {
         mutableStateOf(wakeWordController.getStatus())
+    }
+    var wakeModelHealth by remember {
+        mutableStateOf(wakeModelAssetManager.health())
     }
     var pendingWakeEnableRequest by remember {
         mutableStateOf(false)
@@ -183,6 +190,7 @@ private fun KikoApp() {
 
     fun refreshWakeWordStatus() {
         wakeWordStatus = wakeWordController.getStatus()
+        wakeModelHealth = wakeModelAssetManager.health()
     }
 
     fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {
@@ -367,6 +375,12 @@ private fun KikoApp() {
 
     fun startListeningFromWakeWord() {
         refreshPermissionStatuses()
+        if (uiState.runtimeState == AssistantRuntimeState.LISTENING ||
+            uiState.runtimeState == AssistantRuntimeState.PROCESSING
+        ) {
+            uiState = uiState.copy(statusMessage = "Wake heard while Kiko is already listening.")
+            return
+        }
         if (permissionManager.hasRecordAudioPermission()) {
             ttsManager.stop()
             uiState = uiState.copy(
@@ -428,6 +442,7 @@ private fun KikoApp() {
             importJson = importMemoryJson,
             systemBrightnessControlAllowed = systemBrightnessControlAllowed,
             wakeWordStatus = wakeWordStatus,
+            wakeModelHealth = wakeModelHealth,
             showWakeWordTestControls = true,
             onBackClick = {
                 refreshPermissionStatuses()
@@ -463,8 +478,17 @@ private fun KikoApp() {
                     applyWakeResult(wakeWordController.disableWakeWord())
                 }
             },
+            onWakeWordEngineChange = { engine ->
+                updatePreferences { it.copy(wakeWordEngine = engine) }
+                if (preferences.wakeWordEnabled) {
+                    applyWakeResult(wakeWordController.startService())
+                }
+            },
             onWakeWordSensitivityChange = { sensitivity: WakeWordSensitivity ->
                 updatePreferences { it.copy(wakeWordSensitivity = sensitivity.name) }
+                if (preferences.wakeWordEnabled) {
+                    applyWakeResult(wakeWordController.startService())
+                }
             },
             onTestWakeWordClick = {
                 applyWakeResult(wakeWordController.simulateWakeDetection())

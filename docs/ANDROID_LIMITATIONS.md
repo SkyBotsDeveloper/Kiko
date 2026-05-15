@@ -47,13 +47,20 @@ requires microphone permission and a foreground service notification. Android
 service permission.
 
 Kiko does not keep Android `SpeechRecognizer` always running. Full speech
-recognition starts only after `Hey Kiko` is detected by the wake engine or by
-the fake/manual test flow. If the app is backgrounded and Android blocks direct
-UI launch, Kiko relies on the foreground notification action.
+recognition starts only after `Hey Kiko` is detected by the local wake engine
+or by the fake/manual test flow. If the app is backgrounded and Android blocks
+direct UI launch, Kiko relies on the foreground notification action.
+
+The open-source wake engine expects a trained local TFLite model at
+`app/src/main/assets/wake/hey_kiko.tflite`. If the model is missing, invalid, or
+not compatible with the current foundation runner, Kiko reports the problem and
+keeps manual mic plus Fake/Test wake available. Production wake detection also
+requires battery, heat, noise, and false-trigger testing on real phones.
 
 ## Diagnostics
 
 Diagnostics are written to local Logcat only. They are intended for debugging
 voice start/results, parser intent type, action routing, permission gaps,
 reminder scheduling/storage, TTS state, and wake-word service state. Kiko does
-not send diagnostics to a server.
+not log raw wake audio, frame dumps, or wake transcripts, and it does not send
+diagnostics to a server.

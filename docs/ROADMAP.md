@@ -24,9 +24,9 @@ persistent notification, fake/manual test wake engine, settings toggle, runtime
 states, diagnostics, tests, and docs. Wake word remains optional and off by
 default. No real Picovoice key or private model is committed.
 
-The next V2 phase can integrate a real Porcupine engine behind the
-`WakeWordEngine` abstraction using private developer credentials and model files
-that stay out of Git.
+The current V2 direction intentionally avoids Picovoice Porcupine. Kiko uses an
+open-source local AudioRecord/TFLite foundation and needs a trained `Hey Kiko`
+TFLite model before real wake detection can be claimed.
 
 ## V3: Accessibility automation
 

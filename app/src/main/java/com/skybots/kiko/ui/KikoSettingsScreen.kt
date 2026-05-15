@@ -53,6 +53,7 @@ import com.skybots.kiko.ui.theme.KikoSurface
 import com.skybots.kiko.wake.WakeWordConfig
 import com.skybots.kiko.wake.WakeWordEngineState
 import com.skybots.kiko.wake.WakeWordSensitivity
+import com.skybots.kiko.wake.opensource.WakeEngineHealth
 import com.skybots.kiko.wake.wakeWordSensitivityFrom
 
 @Composable
@@ -63,6 +64,7 @@ fun KikoSettingsScreen(
     importJson: String,
     systemBrightnessControlAllowed: Boolean,
     wakeWordStatus: WakeWordEngineState,
+    wakeModelHealth: WakeEngineHealth,
     showWakeWordTestControls: Boolean,
     onBackClick: () -> Unit,
     onVoiceEnabledChange: (Boolean) -> Unit,
@@ -71,6 +73,7 @@ fun KikoSettingsScreen(
     onPersonalizationEnabledChange: (Boolean) -> Unit,
     onSaveInteractionSummariesChange: (Boolean) -> Unit,
     onWakeWordEnabledChange: (Boolean) -> Unit,
+    onWakeWordEngineChange: (String) -> Unit,
     onWakeWordSensitivityChange: (WakeWordSensitivity) -> Unit,
     onTestWakeWordClick: () -> Unit,
     onClearMemoryClick: () -> Unit,
@@ -142,6 +145,19 @@ fun KikoSettingsScreen(
                     value = WakeWordConfig.DEFAULT_PHRASE,
                 )
                 ChipGroup(
+                    title = "Engine",
+                    options = listOf(
+                        WakeWordConfig.ENGINE_OPEN_SOURCE to "Open-source local",
+                        WakeWordConfig.ENGINE_FAKE to "Fake/Test",
+                    ),
+                    selected = preferences.wakeWordEngine.ifBlank { WakeWordConfig.ENGINE_OPEN_SOURCE },
+                    onSelected = onWakeWordEngineChange,
+                )
+                PermissionLine(
+                    label = "Model status",
+                    value = wakeModelHealth.status.label,
+                )
+                ChipGroup(
                     title = "Sensitivity",
                     options = listOf(
                         WakeWordSensitivity.LOW to "Low",
@@ -152,7 +168,7 @@ fun KikoSettingsScreen(
                     onSelected = onWakeWordSensitivityChange,
                 )
                 Text(
-                    text = "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected.",
+                    text = wakeWordHelpText(wakeModelHealth),
                     color = KikoMutedText,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -453,6 +469,13 @@ private fun PermissionLine(
         )
     }
 }
+
+private fun wakeWordHelpText(health: WakeEngineHealth): String =
+    if (health.isReady) {
+        "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected."
+    } else {
+        "${health.message} Use Fake/Test for development or manual mic until a trained local model is added."
+    }
 
 @Composable
 private fun JsonBox(

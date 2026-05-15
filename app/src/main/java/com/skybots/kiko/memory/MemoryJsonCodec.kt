@@ -101,7 +101,7 @@ object MemoryJsonCodec {
                 saveInteractionSummaries = prefs.optBoolean("saveInteractionSummaries", false),
                 wakeWordEnabled = prefs.optBoolean("wakeWordEnabled", false),
                 wakeWordPhrase = prefs.optString("wakeWordPhrase", "Hey Kiko"),
-                wakeWordEngine = prefs.optString("wakeWordEngine", "fake"),
+                wakeWordEngine = prefs.optString("wakeWordEngine", "open_source"),
                 wakeWordSensitivity = prefs.optString("wakeWordSensitivity", "BALANCED"),
             )
         }

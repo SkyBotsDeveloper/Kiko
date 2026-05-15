@@ -1,0 +1,131 @@
+package com.skybots.kiko.wake.opensource
+
+import com.skybots.kiko.wake.WakeWordEvent
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class OpenSourceWakeWordEngineTest {
+    @Test
+    fun startFailsGracefullyWhenModelMissing() {
+        val events = mutableListOf<WakeWordEvent>()
+        val engine = OpenSourceWakeWordEngine(
+            hasRecordAudioPermission = { true },
+            audioSource = FakeWakeAudioSource(),
+            modelRunner = FakeWakeModelRunner(loadHealth = WakeEngineHealth.modelMissing()),
+        )
+        engine.setEventListener(events::add)
+
+        engine.start()
+
+        assertFalse(engine.isRunning())
+        assertTrue(events.any { it is WakeWordEvent.Error })
+    }
+
+    @Test
+    fun stopReleasesAudioLifecycle() {
+        val source = FakeWakeAudioSource()
+        val runner = FakeWakeModelRunner()
+        val events = mutableListOf<WakeWordEvent>()
+        val engine = OpenSourceWakeWordEngine(
+            hasRecordAudioPermission = { true },
+            audioSource = source,
+            modelRunner = runner,
+            config = OpenSourceWakeConfig(threshold = 0.5f),
+        )
+        engine.setEventListener(events::add)
+
+        engine.start()
+        engine.stop()
+        engine.release()
+
+        assertFalse(engine.isRunning())
+        assertTrue(source.stopped)
+        assertTrue(source.released)
+        assertTrue(runner.released)
+        assertTrue(events.any { it == WakeWordEvent.Started })
+        assertTrue(events.any { it == WakeWordEvent.Stopped })
+    }
+
+    @Test
+    fun highScoresEmitWakeDetectedAndReleaseMic() {
+        val source = FakeWakeAudioSource()
+        val events = mutableListOf<WakeWordEvent>()
+        val engine = OpenSourceWakeWordEngine(
+            hasRecordAudioPermission = { true },
+            audioSource = source,
+            modelRunner = FakeWakeModelRunner(scores = listOf(0.9f, 0.95f)),
+            config = OpenSourceWakeConfig(
+                threshold = 0.7f,
+                smoothingAlpha = 1f,
+                requiredConsecutiveFrames = 2,
+                debounceMillis = 1_000L,
+            ),
+        )
+        engine.setEventListener(events::add)
+
+        engine.start()
+        source.emit()
+        source.emit()
+
+        assertTrue(events.any { it == WakeWordEvent.WakeDetected })
+        assertTrue(source.released)
+    }
+
+    private class FakeWakeAudioSource : WakeAudioSource {
+        private var onFrame: ((WakeAudioFrame) -> Unit)? = null
+        var stopped = false
+        var released = false
+        private var running = false
+
+        override fun start(
+            onFrame: (WakeAudioFrame) -> Unit,
+            onError: (WakeEngineHealth) -> Unit,
+        ): WakeEngineHealth {
+            this.onFrame = onFrame
+            running = true
+            return WakeEngineHealth.ready()
+        }
+
+        override fun stop() {
+            stopped = true
+            running = false
+        }
+
+        override fun release() {
+            released = true
+            stop()
+        }
+
+        override fun isRunning(): Boolean = running
+
+        fun emit() {
+            onFrame?.invoke(
+                WakeAudioFrame(
+                    samples = ShortArray(1) { 100 },
+                    sampleCount = 1,
+                    sampleRateHz = 16_000,
+                ),
+            )
+        }
+    }
+
+    private class FakeWakeModelRunner(
+        private val loadHealth: WakeEngineHealth = WakeEngineHealth.ready(),
+        private val scores: List<Float> = emptyList(),
+    ) : WakeModelRunner {
+        var released = false
+        private var index = 0
+
+        override fun load(): WakeEngineHealth = loadHealth
+
+        override fun score(frame: WakeAudioFrame): Float =
+            scores.getOrElse(index++) { 0f }
+
+        override fun release() {
+            released = true
+        }
+
+        override fun isReady(): Boolean = loadHealth.isReady
+    }
+}

@@ -35,6 +35,34 @@ object WakeWordDiagnostics {
         DiagnosticsLogger.wakeEvent("wake_flow_started")
     }
 
+    fun openSourceEngineSelected() {
+        DiagnosticsLogger.wakeEvent("wake_open_source_engine_selected")
+    }
+
+    fun modelStatus(status: String) {
+        DiagnosticsLogger.wakeEvent("wake_model_status", status)
+    }
+
+    fun audioSourceStart() {
+        DiagnosticsLogger.wakeEvent("wake_audio_source_start")
+    }
+
+    fun audioSourceStop() {
+        DiagnosticsLogger.wakeEvent("wake_audio_source_stop")
+    }
+
+    fun modelInferenceError(message: String) {
+        DiagnosticsLogger.wakeEvent("wake_model_inference_error", message)
+    }
+
+    fun thresholdCrossed(score: Float) {
+        DiagnosticsLogger.wakeEvent("wake_score_threshold_crossed", "score=${"%.3f".format(score)}")
+    }
+
+    fun debouncePrevented() {
+        DiagnosticsLogger.wakeEvent("wake_debounce_prevented")
+    }
+
     fun error(message: String) {
         DiagnosticsLogger.wakeEvent("wake_error", message)
     }

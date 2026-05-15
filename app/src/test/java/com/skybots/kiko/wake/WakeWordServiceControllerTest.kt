@@ -13,7 +13,7 @@ class WakeWordServiceControllerTest {
 
         assertFalse(repository.getUserPreferences().wakeWordEnabled)
         assertEquals("Hey Kiko", repository.getUserPreferences().wakeWordPhrase)
-        assertEquals("fake", repository.getUserPreferences().wakeWordEngine)
+        assertEquals("open_source", repository.getUserPreferences().wakeWordEngine)
     }
 
     @Test
