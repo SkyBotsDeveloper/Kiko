@@ -78,6 +78,12 @@ latest wake score, smoothed score, recent max score, threshold, and lets testers
 temporarily lower the threshold. Low thresholds are for diagnosis only and may
 false trigger.
 
+The wake pipeline now uses baseline-aware gating before WakeDetected. A score
+must cross the threshold and rise meaningfully above the recent ambient baseline.
+If silence/noise sits near `0.50`, the sanity model is marked unsafe/needs a
+better model and WakeDetected is blocked by default. An unsafe override exists
+only for debugging and still requires margin above baseline.
+
 The sanity model may not detect reliably. Use debug mode to confirm whether
 `Hey Kiko` produces scores above silence/noise, then train balanced/quality
 models and tune threshold/debounce on real phones.
@@ -85,6 +91,10 @@ models and tune threshold/debounce on real phones.
 Manual mic and wake detection arbitrate microphone use: Kiko stops the wake
 AudioRecord path before starting Android SpeechRecognizer, then restarts wake
 listening after the command/TTS flow when wake word remains enabled.
+
+Manual mic, fake wake, and real wake all use the same compact in-app orbit
+listening UI. This is intentionally not an overlay service yet, so no overlay
+permission is required.
 
 ## Battery strategy
 

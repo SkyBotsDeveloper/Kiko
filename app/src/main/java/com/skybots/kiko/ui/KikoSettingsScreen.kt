@@ -83,6 +83,7 @@ fun KikoSettingsScreen(
     onWakeWordSensitivityChange: (WakeWordSensitivity) -> Unit,
     onWakeDebugEnabledChange: (Boolean) -> Unit,
     onWakeDebugThresholdChange: (Float) -> Unit,
+    onAllowUnsafeCalibrationChange: (Boolean) -> Unit,
     onResetWakeScoreClick: () -> Unit,
     onRunWakeSelfTestClick: () -> Unit,
     onCopyWakeDebugSummaryClick: () -> Unit,
@@ -172,6 +173,30 @@ fun KikoSettingsScreen(
                     label = "Inference",
                     value = wakeInferenceStatus(wakeWordStatus, wakeScoreSnapshot, wakeDebugSettings),
                 )
+                PermissionLine(
+                    label = "Calibration",
+                    value = wakeScoreSnapshot.calibrationStatus.label,
+                )
+                PermissionLine(
+                    label = "Baseline score",
+                    value = scoreLabel(wakeScoreSnapshot.baselineScore, wakeScoreSnapshot.hasScore),
+                )
+                PermissionLine(
+                    label = "Required wake margin",
+                    value = "%.2f".format(wakeScoreSnapshot.requiredWakeMargin),
+                )
+                if (wakeScoreSnapshot.hasScore &&
+                    wakeScoreSnapshot.calibrationStatus in setOf(
+                        com.skybots.kiko.wake.WakeCalibrationStatus.UNSAFE_BASELINE,
+                        com.skybots.kiko.wake.WakeCalibrationStatus.NEEDS_BETTER_MODEL,
+                    )
+                ) {
+                    Text(
+                        text = "Model baseline is too high. This sanity model may false trigger. Train a balanced/quality model before daily use.",
+                        color = Color.White.copy(alpha = 0.82f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 ChipGroup(
                     title = "Sensitivity",
                     options = listOf(
@@ -242,6 +267,12 @@ fun KikoSettingsScreen(
                         text = "Debug threshold applies only when wake debug mode is on. Low values are for diagnosis and may false trigger.",
                         color = KikoMutedText,
                         style = MaterialTheme.typography.bodySmall,
+                    )
+                    ToggleRow(
+                        title = "Allow unsafe calibration",
+                        subtitle = "Testing only. Lets wake fire even when baseline is unsafe, but margin is still required.",
+                        checked = wakeDebugSettings.allowUnsafeCalibration,
+                        onCheckedChange = onAllowUnsafeCalibrationChange,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),

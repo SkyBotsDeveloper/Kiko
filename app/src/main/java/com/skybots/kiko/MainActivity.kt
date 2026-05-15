@@ -596,6 +596,13 @@ private fun KikoApp() {
                     restartWakeIfEnabled()
                 }
             },
+            onAllowUnsafeCalibrationChange = { allow ->
+                wakeDebugSettings = wakeDebugSettings.copy(allowUnsafeCalibration = allow)
+                wakeDebugSettingsStore.update(wakeDebugSettings)
+                if (wakeDebugSettings.enabled) {
+                    restartWakeIfEnabled()
+                }
+            },
             onResetWakeScoreClick = {
                 WakeWordRuntime.resetScore()
                 wakeScoreSnapshot = WakeWordRuntime.currentScoreSnapshot()

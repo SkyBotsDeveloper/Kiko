@@ -43,6 +43,8 @@ Watch for:
 - Missing model does not crash the app.
 - Feature-input models use the Android log-mel adapter and do not run inference
   more often than the configured stride.
+- Unsafe high-baseline calibration blocks WakeDetected unless a debug unsafe
+  override is intentionally enabled.
 - Wake threshold and debounce are tuned conservatively before long idle tests.
 
 ## Candidate model tests
@@ -52,9 +54,11 @@ For each `hey_kiko.tflite` candidate:
 1. Run `tools/wake_training/export_check.py` and save the compatibility status.
 2. Confirm Android settings show the expected model status.
 3. Enable debug mode briefly and record silence/noise/spoken score ranges.
-4. Disable debug score logging for long battery tests.
-5. Test false wake behavior in a quiet room for at least 30 minutes.
-6. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
-7. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
+4. If silence/noise is around `0.50`, treat the sanity model as unusable for
+   wake detection and train a balanced/quality model.
+5. Disable debug score logging for long battery tests.
+6. Test false wake behavior in a quiet room for at least 30 minutes.
+7. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
+8. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
 
 Battery optimization is a release blocker for real wake detection.

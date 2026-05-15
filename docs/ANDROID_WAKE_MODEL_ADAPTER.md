@@ -67,6 +67,17 @@ score similarly, preprocessing or the sanity model needs more investigation.
 Optional `wake/debug_hey_kiko.wav` can be placed locally in app assets for a
 known-sample test, but no WAV files should be committed.
 
+## Baseline Safety
+
+WakeDetected is blocked unless the score crosses the active threshold and rises
+above the recent ambient baseline by the required margin. The default margin is
+`0.12`. If silence/noise baseline is `0.45` or higher, Kiko marks calibration as
+unsafe/needs a better model and blocks wake by default. This specifically
+protects against sanity models that output about `0.50` for everything.
+
+The unsafe calibration override is debug-only behavior for diagnosis. It may
+false trigger and should not be used for daily wake listening.
+
 ## Validation Before Claiming Real Wake
 
 Do not treat the model as production-ready until:

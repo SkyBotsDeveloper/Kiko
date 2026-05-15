@@ -41,6 +41,12 @@ smoothed, and max recent scores, allow a temporary low-threshold override for
 testing, and provide a silence/noise score check. Lowering the threshold is for
 diagnosis only and may false trigger.
 
+Kiko blocks WakeDetected when the model baseline is unsafe. If silence/noise is
+already near `0.50`, the sanity model is treated as pipeline validation only and
+balanced/quality training is required before daily wake use. Manual mic, fake
+wake, and real wake use a compact in-app orbit listening UI; no overlay
+permission is used in this phase.
+
 ## V1 Features
 
 - Manual mic voice input using Android SpeechRecognizer.

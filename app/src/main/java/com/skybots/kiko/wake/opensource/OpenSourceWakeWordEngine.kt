@@ -22,6 +22,13 @@ class OpenSourceWakeWordEngine(
         onDebounced = WakeWordDiagnostics::debouncePrevented,
     ),
     private val scoreTracker: WakeScoreTracker = WakeScoreTracker(),
+    private val calibrationGuard: WakeCalibrationGuard = WakeCalibrationGuard(
+        threshold = config.threshold,
+        requiredWakeMargin = config.requiredWakeMargin,
+        unsafeBaselineThreshold = config.unsafeBaselineThreshold,
+        warmupInferences = config.baselineWarmupInferences,
+        allowUnsafeCalibration = config.allowUnsafeCalibration,
+    ),
 ) : WakeWordEngine {
     private val running = AtomicBoolean(false)
     private var listener: ((WakeWordEvent) -> Unit)? = null
@@ -82,6 +89,7 @@ class OpenSourceWakeWordEngine(
         smoother.reset()
         debouncer.reset()
         scoreTracker.reset()
+        calibrationGuard.reset()
         inferenceCount = 0L
         WakeWordDiagnostics.audioSourceStop()
         listener?.invoke(WakeWordEvent.Stopped)
@@ -108,16 +116,24 @@ class OpenSourceWakeWordEngine(
         inferenceCount += 1L
         val smoothedScore = smoother.smooth(rawScore)
         val maxRecent = scoreTracker.record(rawScore)
-        val triggered = debouncer.shouldTrigger(smoothedScore)
+        val calibration = calibrationGuard.evaluate(smoothedScore)
+        val debouncerScore = if (calibration.canPassToDebouncer) smoothedScore else 0f
+        val triggered = debouncer.shouldTrigger(debouncerScore)
         val snapshot = WakeScoreSnapshot(
             rawScore = rawScore,
             smoothedScore = smoothedScore,
             maxRecentScore = maxRecent,
             threshold = config.threshold,
+            baselineScore = calibration.baselineScore,
+            marginAboveBaseline = calibration.marginAboveBaseline,
+            requiredWakeMargin = calibration.requiredWakeMargin,
+            calibrationStatus = calibration.status,
+            triggerBlockedReason = calibration.blockedReason,
             debounceHits = debouncer.consecutiveFrameCount,
             inferenceCount = inferenceCount,
             debugMode = config.wakeDebugEnabled,
             thresholdOverrideActive = config.debugThresholdOverrideActive,
+            allowUnsafeCalibration = config.allowUnsafeCalibration,
             closeToThreshold = !triggered && smoothedScore >= (config.threshold * CLOSE_TO_THRESHOLD_RATIO),
             thresholdCrossed = triggered,
         )
@@ -129,6 +145,14 @@ class OpenSourceWakeWordEngine(
             }
             if (snapshot.closeToThreshold) {
                 WakeWordDiagnostics.scoreCloseToThreshold(snapshot)
+            }
+            if (calibration.blockedReason.isNotBlank() &&
+                smoothedScore >= (config.threshold * CLOSE_TO_THRESHOLD_RATIO)
+            ) {
+                WakeWordDiagnostics.wakeTriggerBlocked(snapshot)
+            }
+            if (calibration.canPassToDebouncer) {
+                WakeWordDiagnostics.wakeTriggerAllowed(snapshot)
             }
         }
 

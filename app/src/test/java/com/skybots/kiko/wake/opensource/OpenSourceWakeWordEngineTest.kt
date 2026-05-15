@@ -62,6 +62,7 @@ class OpenSourceWakeWordEngineTest {
                 smoothingAlpha = 1f,
                 requiredConsecutiveFrames = 2,
                 debounceMillis = 1_000L,
+                baselineWarmupInferences = 0,
             ),
         )
         engine.setEventListener { event ->
@@ -94,6 +95,7 @@ class OpenSourceWakeWordEngineTest {
                 wakeDebugEnabled = true,
                 debugThresholdOverrideActive = true,
                 scoreLogInterval = 1,
+                baselineWarmupInferences = 0,
             ),
         )
 

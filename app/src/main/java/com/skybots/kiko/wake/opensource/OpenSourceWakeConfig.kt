@@ -17,6 +17,10 @@ data class OpenSourceWakeConfig(
     val logMelInferenceStrideFrames: Int = 4,
     val wakeDebugEnabled: Boolean = false,
     val debugThresholdOverrideActive: Boolean = false,
+    val allowUnsafeCalibration: Boolean = false,
+    val requiredWakeMargin: Float = 0.12f,
+    val unsafeBaselineThreshold: Float = 0.45f,
+    val baselineWarmupInferences: Int = 6,
     val scoreLogInterval: Int = 10,
 ) {
     companion object {

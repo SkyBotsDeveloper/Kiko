@@ -79,6 +79,14 @@ object WakeWordDiagnostics {
         DiagnosticsLogger.wakeEvent("wake_score_close_to_threshold", snapshot.summary())
     }
 
+    fun wakeTriggerBlocked(snapshot: WakeScoreSnapshot) {
+        DiagnosticsLogger.wakeEvent("wake_trigger_blocked", snapshot.summary())
+    }
+
+    fun wakeTriggerAllowed(snapshot: WakeScoreSnapshot) {
+        DiagnosticsLogger.wakeEvent("wake_trigger_allowed", snapshot.summary())
+    }
+
     fun debouncePrevented() {
         DiagnosticsLogger.wakeEvent("wake_debounce_prevented")
     }

@@ -182,6 +182,7 @@ class WakeWordService : Service() {
                 threshold = debugSettings.threshold,
                 wakeDebugEnabled = true,
                 debugThresholdOverrideActive = true,
+                allowUnsafeCalibration = debugSettings.allowUnsafeCalibration,
             )
         } else {
             base

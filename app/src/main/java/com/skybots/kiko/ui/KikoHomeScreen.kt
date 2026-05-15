@@ -119,6 +119,13 @@ fun KikoHomeScreen(
 
             PermissionStatusSection(permissionStatuses = permissionStatuses)
         }
+        if (shouldShowListeningOrbit(uiState.runtimeState)) {
+            ListeningOrbitOverlay(
+                transcript = uiState.transcript,
+                statusMessage = uiState.statusMessage,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
     }
 }
 
@@ -319,6 +326,54 @@ private fun MicButton(
 }
 
 @Composable
+private fun ListeningOrbitOverlay(
+    transcript: String,
+    statusMessage: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        color = KikoSurface.copy(alpha = 0.94f),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, KikoAccent.copy(alpha = 0.35f)),
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            KikoOrb(isListening = true)
+            Text(
+                text = "Kiko is listening",
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = if (statusMessage.isBlank()) "Listening..." else statusMessage,
+                color = KikoAccent,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = transcript,
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
 private fun AssistantTextPlaceholders(
     transcript: String,
     response: String,
@@ -465,6 +520,9 @@ private val AssistantRuntimeState.label: String
         AssistantRuntimeState.SPEAKING -> "Speaking"
         AssistantRuntimeState.ERROR -> "Error"
     }
+
+internal fun shouldShowListeningOrbit(state: AssistantRuntimeState): Boolean =
+    state == AssistantRuntimeState.LISTENING || state == AssistantRuntimeState.PROCESSING
 
 @Preview(showBackground = true, backgroundColor = 0xFF06080D)
 @Composable
