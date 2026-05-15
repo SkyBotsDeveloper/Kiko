@@ -51,6 +51,8 @@ import com.skybots.kiko.ui.theme.KikoBorder
 import com.skybots.kiko.ui.theme.KikoMutedText
 import com.skybots.kiko.ui.theme.KikoSurface
 import com.skybots.kiko.wake.WakeWordConfig
+import com.skybots.kiko.wake.WakeDebugSettings
+import com.skybots.kiko.wake.WakeScoreSnapshot
 import com.skybots.kiko.wake.WakeWordEngineState
 import com.skybots.kiko.wake.WakeWordSensitivity
 import com.skybots.kiko.wake.opensource.WakeEngineHealth
@@ -65,7 +67,11 @@ fun KikoSettingsScreen(
     systemBrightnessControlAllowed: Boolean,
     wakeWordStatus: WakeWordEngineState,
     wakeModelHealth: WakeEngineHealth,
+    wakeDebugSettings: WakeDebugSettings,
+    wakeScoreSnapshot: WakeScoreSnapshot,
+    wakeSelfTestResult: String,
     showWakeWordTestControls: Boolean,
+    showWakeDebugControls: Boolean,
     onBackClick: () -> Unit,
     onVoiceEnabledChange: (Boolean) -> Unit,
     onLanguageStyleChange: (LanguageStyle) -> Unit,
@@ -75,6 +81,11 @@ fun KikoSettingsScreen(
     onWakeWordEnabledChange: (Boolean) -> Unit,
     onWakeWordEngineChange: (String) -> Unit,
     onWakeWordSensitivityChange: (WakeWordSensitivity) -> Unit,
+    onWakeDebugEnabledChange: (Boolean) -> Unit,
+    onWakeDebugThresholdChange: (Float) -> Unit,
+    onResetWakeScoreClick: () -> Unit,
+    onRunWakeSelfTestClick: () -> Unit,
+    onCopyWakeDebugSummaryClick: () -> Unit,
     onTestWakeWordClick: () -> Unit,
     onClearMemoryClick: () -> Unit,
     onExportMemoryClick: () -> Unit,
@@ -157,6 +168,10 @@ fun KikoSettingsScreen(
                     label = "Model status",
                     value = wakeModelHealth.status.label,
                 )
+                PermissionLine(
+                    label = "Inference",
+                    value = wakeInferenceStatus(wakeWordStatus, wakeScoreSnapshot, wakeDebugSettings),
+                )
                 ChipGroup(
                     title = "Sensitivity",
                     options = listOf(
@@ -180,6 +195,84 @@ fun KikoSettingsScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = KikoAccent),
                     ) {
                         Text("Test wake flow / Simulate Hey Kiko")
+                    }
+                }
+            }
+
+            if (showWakeDebugControls) {
+                PreferenceSection(title = "Wake debug and calibration") {
+                    ToggleRow(
+                        title = "Wake debug mode",
+                        subtitle = "Logs sampled wake scores and enables temporary threshold override.",
+                        checked = wakeDebugSettings.enabled,
+                        onCheckedChange = onWakeDebugEnabledChange,
+                    )
+                    PermissionLine(
+                        label = "Latest score",
+                        value = scoreLabel(wakeScoreSnapshot.rawScore, wakeScoreSnapshot.hasScore),
+                    )
+                    PermissionLine(
+                        label = "Smoothed score",
+                        value = scoreLabel(wakeScoreSnapshot.smoothedScore, wakeScoreSnapshot.hasScore),
+                    )
+                    PermissionLine(
+                        label = "Max recent",
+                        value = scoreLabel(wakeScoreSnapshot.maxRecentScore, wakeScoreSnapshot.hasScore),
+                    )
+                    PermissionLine(
+                        label = "Threshold",
+                        value = "%.2f%s".format(
+                            wakeDebugSettings.threshold,
+                            if (wakeDebugSettings.enabled) " debug" else " default",
+                        ),
+                    )
+                    ChipGroup(
+                        title = "Debug threshold",
+                        options = listOf(
+                            0.10f to "0.10 may false trigger",
+                            0.20f to "0.20",
+                            0.30f to "0.30",
+                            0.40f to "0.40",
+                            0.50f to "0.50 default",
+                        ),
+                        selected = wakeDebugSettings.threshold,
+                        onSelected = onWakeDebugThresholdChange,
+                    )
+                    Text(
+                        text = "Debug threshold applies only when wake debug mode is on. Low values are for diagnosis and may false trigger.",
+                        color = KikoMutedText,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = onResetWakeScoreClick,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Reset max")
+                        }
+                        OutlinedButton(
+                            onClick = onCopyWakeDebugSummaryClick,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Copy summary")
+                        }
+                    }
+                    Button(
+                        onClick = onRunWakeSelfTestClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = KikoAccent),
+                    ) {
+                        Text("Run silence/noise score check")
+                    }
+                    if (wakeSelfTestResult.isNotBlank()) {
+                        Text(
+                            text = wakeSelfTestResult,
+                            color = KikoMutedText,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
             }
@@ -487,6 +580,30 @@ private fun wakeWordHelpText(health: WakeEngineHealth): String =
         else ->
             "${health.message} Use Fake/Test for development or manual mic until a trained local model is added."
     }
+
+private fun wakeInferenceStatus(
+    wakeWordStatus: WakeWordEngineState,
+    snapshot: WakeScoreSnapshot,
+    debugSettings: WakeDebugSettings,
+): String =
+    when {
+        debugSettings.enabled && snapshot.hasScore ->
+            "Last score available, debug threshold active"
+        snapshot.hasScore ->
+            "Last score available"
+        wakeWordStatus == WakeWordEngineState.Listening ->
+            "Listening, no score yet"
+        wakeWordStatus == WakeWordEngineState.Starting ->
+            "Starting inference"
+        else ->
+            wakeWordStatus.label
+    }
+
+private fun scoreLabel(
+    value: Float,
+    hasScore: Boolean,
+): String =
+    if (hasScore) "%.3f".format(value) else "No score yet"
 
 @Composable
 private fun JsonBox(

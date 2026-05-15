@@ -50,6 +50,23 @@ needs device-score validation and tuning.
 - Train balanced/quality models after the pipeline is verified.
 - Revisit performance if low-end phones show CPU or heat issues.
 
+## Calibration Mode
+
+Debug builds expose wake score calibration in Settings. Enable Wake debug mode
+to log sampled inference scores and display:
+
+- raw score
+- smoothed score
+- max recent score
+- active threshold
+- whether the debug threshold override is active
+
+The silence/noise score check runs the installed model against generated silence
+and simple deterministic noise. If silence, noise, and spoken `Hey Kiko` all
+score similarly, preprocessing or the sanity model needs more investigation.
+Optional `wake/debug_hey_kiko.wav` can be placed locally in app assets for a
+known-sample test, but no WAV files should be committed.
+
 ## Validation Before Claiming Real Wake
 
 Do not treat the model as production-ready until:

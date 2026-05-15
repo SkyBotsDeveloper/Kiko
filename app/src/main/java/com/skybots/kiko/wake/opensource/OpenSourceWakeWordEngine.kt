@@ -5,7 +5,8 @@ import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.wake.WakeWordDiagnostics
 import com.skybots.kiko.wake.WakeWordEngine
 import com.skybots.kiko.wake.WakeWordEvent
-import com.skybots.kiko.wake.WakeWordSensitivity
+import com.skybots.kiko.wake.WakeWordRuntime
+import com.skybots.kiko.wake.WakeScoreSnapshot
 import java.util.concurrent.atomic.AtomicBoolean
 
 class OpenSourceWakeWordEngine(
@@ -20,24 +21,26 @@ class OpenSourceWakeWordEngine(
         debounceMillis = config.debounceMillis,
         onDebounced = WakeWordDiagnostics::debouncePrevented,
     ),
+    private val scoreTracker: WakeScoreTracker = WakeScoreTracker(),
 ) : WakeWordEngine {
     private val running = AtomicBoolean(false)
     private var listener: ((WakeWordEvent) -> Unit)? = null
+    private var inferenceCount = 0L
 
     constructor(
         context: Context,
-        sensitivity: WakeWordSensitivity,
+        config: OpenSourceWakeConfig,
         permissionManager: PermissionManager,
     ) : this(
         hasRecordAudioPermission = permissionManager::hasRecordAudioPermission,
-        config = OpenSourceWakeConfig.fromSensitivity(sensitivity),
+        config = config,
         audioSource = AudioRecordWakeAudioSource(
             hasRecordAudioPermission = permissionManager::hasRecordAudioPermission,
-            config = OpenSourceWakeConfig.fromSensitivity(sensitivity),
+            config = config,
         ),
         modelRunner = TfliteWakeModelRunner(
             assetManager = WakeModelAssetManager(context),
-            config = OpenSourceWakeConfig.fromSensitivity(sensitivity),
+            config = config,
         ),
     )
 
@@ -78,6 +81,8 @@ class OpenSourceWakeWordEngine(
         audioSource.stop()
         smoother.reset()
         debouncer.reset()
+        scoreTracker.reset()
+        inferenceCount = 0L
         WakeWordDiagnostics.audioSourceStop()
         listener?.invoke(WakeWordEvent.Stopped)
     }
@@ -97,9 +102,38 @@ class OpenSourceWakeWordEngine(
 
     private fun handleFrame(frame: WakeAudioFrame) {
         if (!running.get()) return
-        val score = smoother.smooth(modelRunner.score(frame))
-        if (debouncer.shouldTrigger(score)) {
-            WakeWordDiagnostics.thresholdCrossed(score)
+        val rawScore = modelRunner.score(frame)
+        if (rawScore.isNaN()) return
+
+        inferenceCount += 1L
+        val smoothedScore = smoother.smooth(rawScore)
+        val maxRecent = scoreTracker.record(rawScore)
+        val triggered = debouncer.shouldTrigger(smoothedScore)
+        val snapshot = WakeScoreSnapshot(
+            rawScore = rawScore,
+            smoothedScore = smoothedScore,
+            maxRecentScore = maxRecent,
+            threshold = config.threshold,
+            debounceHits = debouncer.consecutiveFrameCount,
+            inferenceCount = inferenceCount,
+            debugMode = config.wakeDebugEnabled,
+            thresholdOverrideActive = config.debugThresholdOverrideActive,
+            closeToThreshold = !triggered && smoothedScore >= (config.threshold * CLOSE_TO_THRESHOLD_RATIO),
+            thresholdCrossed = triggered,
+        )
+
+        if (config.wakeDebugEnabled) {
+            WakeWordRuntime.publishScore(snapshot)
+            if (inferenceCount % config.scoreLogInterval.coerceAtLeast(1) == 0L) {
+                WakeWordDiagnostics.wakeScoreDebug(snapshot)
+            }
+            if (snapshot.closeToThreshold) {
+                WakeWordDiagnostics.scoreCloseToThreshold(snapshot)
+            }
+        }
+
+        if (triggered) {
+            WakeWordDiagnostics.thresholdCrossed(smoothedScore)
             running.set(false)
             audioSource.release()
             WakeWordDiagnostics.audioSourceStop()
@@ -111,5 +145,9 @@ class OpenSourceWakeWordEngine(
         running.set(false)
         WakeWordDiagnostics.error(health.message)
         listener?.invoke(WakeWordEvent.Error(health.message))
+    }
+
+    private companion object {
+        const val CLOSE_TO_THRESHOLD_RATIO = 0.8f
     }
 }

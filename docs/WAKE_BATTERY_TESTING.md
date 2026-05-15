@@ -30,6 +30,7 @@ Watch for:
 - microphone errors
 - wake detections while quiet
 - SpeechRecognizer running while idle
+- wake score logging left enabled for long idle tests
 
 ## Required checks
 
@@ -37,6 +38,7 @@ Watch for:
 - Foreground notification is visible while wake listening is active.
 - Android SpeechRecognizer starts only after wake detection.
 - AudioRecord stops before SpeechRecognizer starts.
+- Manual mic stops wake AudioRecord before starting SpeechRecognizer.
 - Disabling wake word stops the service and releases microphone resources.
 - Missing model does not crash the app.
 - Feature-input models use the Android log-mel adapter and do not run inference
@@ -49,8 +51,10 @@ For each `hey_kiko.tflite` candidate:
 
 1. Run `tools/wake_training/export_check.py` and save the compatibility status.
 2. Confirm Android settings show the expected model status.
-3. Test false wake behavior in a quiet room for at least 30 minutes.
-4. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
-5. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
+3. Enable debug mode briefly and record silence/noise/spoken score ranges.
+4. Disable debug score logging for long battery tests.
+5. Test false wake behavior in a quiet room for at least 30 minutes.
+6. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
+7. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
 
 Battery optimization is a release blocker for real wake detection.

@@ -15,12 +15,15 @@ data class OpenSourceWakeConfig(
     // few AudioRecord frames keeps idle CPU lower while still checking the rolling
     // 1200 ms wake window often enough for a sanity-model wake flow.
     val logMelInferenceStrideFrames: Int = 4,
+    val wakeDebugEnabled: Boolean = false,
+    val debugThresholdOverrideActive: Boolean = false,
+    val scoreLogInterval: Int = 10,
 ) {
     companion object {
         const val MODEL_ASSET_PATH = "wake/hey_kiko.tflite"
         const val LOW_THRESHOLD = 0.65f
         const val BALANCED_THRESHOLD = 0.50f
-        const val HIGH_THRESHOLD = 0.40f
+        const val HIGH_THRESHOLD = 0.30f
 
         fun fromSensitivity(sensitivity: WakeWordSensitivity): OpenSourceWakeConfig =
             OpenSourceWakeConfig(

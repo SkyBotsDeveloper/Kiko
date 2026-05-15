@@ -71,6 +71,21 @@ trigger testing, and battery testing pass.
 The next Android runtime step is documented in
 `docs/ANDROID_WAKE_MODEL_ADAPTER.md`.
 
+## Debug and calibration
+
+Debug builds include a Wake debug and calibration section in Settings. It shows
+latest wake score, smoothed score, recent max score, threshold, and lets testers
+temporarily lower the threshold. Low thresholds are for diagnosis only and may
+false trigger.
+
+The sanity model may not detect reliably. Use debug mode to confirm whether
+`Hey Kiko` produces scores above silence/noise, then train balanced/quality
+models and tune threshold/debounce on real phones.
+
+Manual mic and wake detection arbitrate microphone use: Kiko stops the wake
+AudioRecord path before starting Android SpeechRecognizer, then restarts wake
+listening after the command/TTS flow when wake word remains enabled.
+
 ## Battery strategy
 
 - Wake word is off by default.

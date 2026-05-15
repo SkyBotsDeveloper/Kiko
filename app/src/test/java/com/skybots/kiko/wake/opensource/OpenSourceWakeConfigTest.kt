@@ -1,6 +1,7 @@
 package com.skybots.kiko.wake.opensource
 
 import com.skybots.kiko.wake.WakeWordSensitivity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,5 +25,6 @@ class OpenSourceWakeConfigTest {
 
         assertTrue(low.threshold > balanced.threshold)
         assertTrue(balanced.threshold > high.threshold)
+        assertEquals(0.30f, high.threshold, 0.0001f)
     }
 }

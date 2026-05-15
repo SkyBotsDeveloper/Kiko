@@ -2,9 +2,15 @@ package com.skybots.kiko
 
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -57,14 +63,18 @@ import com.skybots.kiko.voice.TtsManager
 import com.skybots.kiko.voice.VoiceInputState
 import com.skybots.kiko.voice.VoiceOutputState
 import com.skybots.kiko.wake.WakeWordControlResult
+import com.skybots.kiko.wake.WakeDebugSettings
+import com.skybots.kiko.wake.WakeDebugSettingsStore
 import com.skybots.kiko.wake.WakeWordEngineState
 import com.skybots.kiko.wake.WakeWordEvent
+import com.skybots.kiko.wake.WakeMicArbitration
 import com.skybots.kiko.wake.WakeWordRuntime
 import com.skybots.kiko.wake.WakeWordServiceController
 import com.skybots.kiko.wake.WakeWordSensitivity
 import com.skybots.kiko.wake.opensource.OpenSourceWakeConfig
 import com.skybots.kiko.wake.opensource.TfliteWakeModelRunner
 import com.skybots.kiko.wake.opensource.WakeModelAssetManager
+import com.skybots.kiko.wake.opensource.WakeModelSelfTest
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,6 +179,12 @@ private fun KikoApp() {
             memoryRepository = memoryRepository,
         )
     }
+    val mainHandler = remember {
+        Handler(Looper.getMainLooper())
+    }
+    val wakeDebugSettingsStore = remember(context) {
+        WakeDebugSettingsStore(context)
+    }
     val wakeModelAssetManager = remember(context) {
         WakeModelAssetManager(context)
     }
@@ -178,8 +194,20 @@ private fun KikoApp() {
     var wakeModelHealth by remember {
         mutableStateOf(TfliteWakeModelRunner.inspectModelHealth(wakeModelAssetManager, OpenSourceWakeConfig()))
     }
+    var wakeDebugSettings by remember {
+        mutableStateOf(wakeDebugSettingsStore.read())
+    }
+    var wakeScoreSnapshot by remember {
+        mutableStateOf(WakeWordRuntime.currentScoreSnapshot())
+    }
+    var wakeSelfTestResult by remember {
+        mutableStateOf("")
+    }
     var pendingWakeEnableRequest by remember {
         mutableStateOf(false)
+    }
+    val showWakeDebugControls = remember(context) {
+        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
     fun refreshPermissionStatuses() {
@@ -193,6 +221,8 @@ private fun KikoApp() {
     fun refreshWakeWordStatus() {
         wakeWordStatus = wakeWordController.getStatus()
         wakeModelHealth = TfliteWakeModelRunner.inspectModelHealth(wakeModelAssetManager, OpenSourceWakeConfig())
+        wakeScoreSnapshot = WakeWordRuntime.currentScoreSnapshot()
+        wakeDebugSettings = wakeDebugSettingsStore.read()
     }
 
     fun updatePreferences(transform: (com.skybots.kiko.memory.UserPreferenceEntity) -> com.skybots.kiko.memory.UserPreferenceEntity) {
@@ -216,11 +246,29 @@ private fun KikoApp() {
         refreshWakeWordStatus()
     }
 
+    fun restartWakeIfEnabled() {
+        if (memoryRepository.getUserPreferences().wakeWordEnabled) {
+            applyWakeResult(wakeWordController.startService())
+        }
+    }
+
+    val wakeMicArbitration = remember(wakeWordController, memoryRepository) {
+        WakeMicArbitration(
+            isWakeEnabled = { memoryRepository.getUserPreferences().wakeWordEnabled },
+            currentWakeState = { wakeWordController.getStatus() },
+            stopWakeService = { wakeWordController.stopService() },
+            startWakeService = { wakeWordController.startService() },
+        )
+    }
+
     val ttsManager = remember(context) {
         TtsManager(context) { outputState ->
             uiState = when (outputState) {
                 VoiceOutputState.Idle -> {
                     if (uiState.runtimeState == AssistantRuntimeState.SPEAKING) {
+                        if (wakeMicArbitration.resumeIfNeeded()) {
+                            refreshWakeWordStatus()
+                        }
                         uiState.copy(
                             runtimeState = AssistantRuntimeState.IDLE,
                             statusMessage = "Ready for manual voice input.",
@@ -239,7 +287,11 @@ private fun KikoApp() {
                 is VoiceOutputState.Error -> uiState.copy(
                     runtimeState = AssistantRuntimeState.ERROR,
                     statusMessage = outputState.message,
-                )
+                ).also {
+                    if (wakeMicArbitration.resumeIfNeeded()) {
+                        refreshWakeWordStatus()
+                    }
+                }
             }
         }
     }
@@ -316,6 +368,8 @@ private fun KikoApp() {
         refreshPreferences()
         if (memoryRepository.getUserPreferences().voiceEnabled) {
             ttsManager.speak(result.response, result.intent.languageHint)
+        } else if (wakeMicArbitration.resumeIfNeeded()) {
+            refreshWakeWordStatus()
         }
         requestActionPermission(result.requestedPermission)
     }
@@ -341,11 +395,31 @@ private fun KikoApp() {
                         runtimeState = AssistantRuntimeState.ERROR,
                         kikoResponse = inputState.message,
                         statusMessage = inputState.message,
-                    )
+                    ).also {
+                        if (wakeMicArbitration.resumeIfNeeded()) {
+                            refreshWakeWordStatus()
+                        }
+                    }
                 }
             },
             onFinalResult = ::processTranscript,
         )
+    }
+
+    fun startManualVoiceInput() {
+        ttsManager.stop()
+        val pausedWake = wakeMicArbitration.pauseForManualMic()
+        refreshWakeWordStatus()
+        val startListening = {
+            if (permissionManager.hasRecordAudioPermission()) {
+                speechRecognizerManager.startListening()
+            }
+        }
+        if (pausedWake) {
+            mainHandler.postDelayed(startListening, WAKE_MIC_RELEASE_DELAY_MS)
+        } else {
+            startListening()
+        }
     }
 
     val micPermissionLauncher = rememberLauncherForActivityResult(
@@ -365,7 +439,7 @@ private fun KikoApp() {
                 )
             }
         } else if (granted) {
-            speechRecognizerManager.startListening()
+            startManualVoiceInput()
         } else {
             uiState = uiState.copy(
                 runtimeState = AssistantRuntimeState.ERROR,
@@ -385,11 +459,22 @@ private fun KikoApp() {
         }
         if (permissionManager.hasRecordAudioPermission()) {
             ttsManager.stop()
+            val pausedWake = wakeMicArbitration.pauseAfterWakeDetected()
+            refreshWakeWordStatus()
             uiState = uiState.copy(
                 runtimeState = AssistantRuntimeState.LISTENING,
                 statusMessage = "Hey Kiko heard. Listening.",
             )
-            speechRecognizerManager.startListeningFromWakeWord()
+            val startListening = {
+                if (permissionManager.hasRecordAudioPermission()) {
+                    speechRecognizerManager.startListeningFromWakeWord()
+                }
+            }
+            if (pausedWake) {
+                mainHandler.postDelayed(startListening, WAKE_MIC_RELEASE_DELAY_MS)
+            } else {
+                startListening()
+            }
         } else {
             DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
             wakeWordStatus = WakeWordEngineState.PermissionMissing
@@ -415,6 +500,9 @@ private fun KikoApp() {
                 WakeWordEvent.WakeDetected -> {
                     wakeWordStatus = WakeWordEngineState.WakeDetected
                     startListeningFromWakeWord()
+                }
+                is WakeWordEvent.ScoreDebug -> {
+                    wakeScoreSnapshot = event.snapshot
                 }
                 is WakeWordEvent.Error -> {
                     wakeWordStatus = WakeWordEngineState.Error
@@ -445,7 +533,11 @@ private fun KikoApp() {
             systemBrightnessControlAllowed = systemBrightnessControlAllowed,
             wakeWordStatus = wakeWordStatus,
             wakeModelHealth = wakeModelHealth,
-            showWakeWordTestControls = true,
+            wakeDebugSettings = wakeDebugSettings,
+            wakeScoreSnapshot = wakeScoreSnapshot,
+            wakeSelfTestResult = wakeSelfTestResult,
+            showWakeWordTestControls = showWakeDebugControls,
+            showWakeDebugControls = showWakeDebugControls,
             onBackClick = {
                 refreshPermissionStatuses()
                 systemBrightnessControlAllowed = Settings.System.canWrite(context)
@@ -491,6 +583,41 @@ private fun KikoApp() {
                 if (preferences.wakeWordEnabled) {
                     applyWakeResult(wakeWordController.startService())
                 }
+            },
+            onWakeDebugEnabledChange = { enabled ->
+                wakeDebugSettings = wakeDebugSettings.copy(enabled = enabled)
+                wakeDebugSettingsStore.update(wakeDebugSettings)
+                restartWakeIfEnabled()
+            },
+            onWakeDebugThresholdChange = { threshold ->
+                wakeDebugSettings = wakeDebugSettings.copy(threshold = threshold)
+                wakeDebugSettingsStore.update(wakeDebugSettings)
+                if (wakeDebugSettings.enabled) {
+                    restartWakeIfEnabled()
+                }
+            },
+            onResetWakeScoreClick = {
+                WakeWordRuntime.resetScore()
+                wakeScoreSnapshot = WakeWordRuntime.currentScoreSnapshot()
+                restartWakeIfEnabled()
+                uiState = uiState.copy(statusMessage = "Wake score max reset.")
+            },
+            onRunWakeSelfTestClick = {
+                wakeSelfTestResult = "Running wake score check..."
+                Thread {
+                    val result = WakeModelSelfTest(context).run()
+                    mainHandler.post {
+                        wakeSelfTestResult = result.summary()
+                        uiState = uiState.copy(statusMessage = "Wake score check complete.")
+                    }
+                }.start()
+            },
+            onCopyWakeDebugSummaryClick = {
+                val summary = "status=${wakeWordStatus.label} model=${wakeModelHealth.status.label} " +
+                    wakeScoreSnapshot.summary()
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("Kiko wake debug", summary))
+                uiState = uiState.copy(statusMessage = "Wake debug summary copied.")
             },
             onTestWakeWordClick = {
                 applyWakeResult(wakeWordController.simulateWakeDetection())
@@ -542,8 +669,7 @@ private fun KikoApp() {
             onMicClick = {
                 refreshPermissionStatuses()
                 if (permissionManager.hasRecordAudioPermission()) {
-                    ttsManager.stop()
-                    speechRecognizerManager.startListening()
+                    startManualVoiceInput()
                 } else {
                     DiagnosticsLogger.permissionMissing(KikoPermission.RECORD_AUDIO)
                     micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -565,3 +691,5 @@ private fun KikoApp() {
         )
     }
 }
+
+private const val WAKE_MIC_RELEASE_DELAY_MS = 350L

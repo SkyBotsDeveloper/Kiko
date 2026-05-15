@@ -8,7 +8,12 @@ object WakeWordRuntime {
     @Volatile
     private var state: WakeWordEngineState = WakeWordEngineState.Disabled
 
+    @Volatile
+    private var scoreSnapshot: WakeScoreSnapshot = WakeScoreSnapshot()
+
     fun currentState(): WakeWordEngineState = state
+
+    fun currentScoreSnapshot(): WakeScoreSnapshot = scoreSnapshot
 
     fun updateState(newState: WakeWordEngineState) {
         state = newState
@@ -19,9 +24,21 @@ object WakeWordRuntime {
             WakeWordEvent.Started -> WakeWordEngineState.Listening
             WakeWordEvent.Stopped -> WakeWordEngineState.Stopped
             WakeWordEvent.WakeDetected -> WakeWordEngineState.WakeDetected
+            is WakeWordEvent.ScoreDebug -> state
             is WakeWordEvent.Error -> WakeWordEngineState.Error
         }
+        if (event is WakeWordEvent.ScoreDebug) {
+            scoreSnapshot = event.snapshot
+        }
         listeners.forEach { listener -> listener(event) }
+    }
+
+    fun publishScore(snapshot: WakeScoreSnapshot) {
+        publish(WakeWordEvent.ScoreDebug(snapshot))
+    }
+
+    fun resetScore() {
+        scoreSnapshot = WakeScoreSnapshot()
     }
 
     fun subscribe(listener: (WakeWordEvent) -> Unit): () -> Unit {
@@ -32,5 +49,6 @@ object WakeWordRuntime {
     fun resetForTests() {
         listeners.clear()
         state = WakeWordEngineState.Disabled
+        scoreSnapshot = WakeScoreSnapshot()
     }
 }

@@ -36,6 +36,11 @@ for real-phone pipeline testing. It is still not a production-quality wake
 model until balanced/quality training, threshold tuning, false-trigger testing,
 and battery testing pass.
 
+Debug builds include wake score calibration controls in Settings. They show raw,
+smoothed, and max recent scores, allow a temporary low-threshold override for
+testing, and provide a silence/noise score check. Lowering the threshold is for
+diagnosis only and may false trigger.
+
 ## V1 Features
 
 - Manual mic voice input using Android SpeechRecognizer.

@@ -1,6 +1,7 @@
 package com.skybots.kiko.wake.opensource
 
 import com.skybots.kiko.wake.WakeWordEvent
+import com.skybots.kiko.wake.WakeWordRuntime
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -51,6 +52,7 @@ class OpenSourceWakeWordEngineTest {
     fun highScoresEmitWakeDetectedAndReleaseMic() {
         val source = FakeWakeAudioSource()
         val events = mutableListOf<WakeWordEvent>()
+        var micReleasedBeforeEvent = false
         val engine = OpenSourceWakeWordEngine(
             hasRecordAudioPermission = { true },
             audioSource = source,
@@ -62,7 +64,12 @@ class OpenSourceWakeWordEngineTest {
                 debounceMillis = 1_000L,
             ),
         )
-        engine.setEventListener(events::add)
+        engine.setEventListener { event ->
+            if (event == WakeWordEvent.WakeDetected) {
+                micReleasedBeforeEvent = source.released
+            }
+            events += event
+        }
 
         engine.start()
         source.emit()
@@ -70,6 +77,35 @@ class OpenSourceWakeWordEngineTest {
 
         assertTrue(events.any { it == WakeWordEvent.WakeDetected })
         assertTrue(source.released)
+        assertTrue(micReleasedBeforeEvent)
+    }
+
+    @Test
+    fun debugScoresPublishRuntimeSnapshot() {
+        WakeWordRuntime.resetForTests()
+        val source = FakeWakeAudioSource()
+        val engine = OpenSourceWakeWordEngine(
+            hasRecordAudioPermission = { true },
+            audioSource = source,
+            modelRunner = FakeWakeModelRunner(scores = listOf(0.2f, 0.4f)),
+            config = OpenSourceWakeConfig(
+                threshold = 0.5f,
+                smoothingAlpha = 1f,
+                wakeDebugEnabled = true,
+                debugThresholdOverrideActive = true,
+                scoreLogInterval = 1,
+            ),
+        )
+
+        engine.start()
+        source.emit()
+        source.emit()
+
+        val snapshot = WakeWordRuntime.currentScoreSnapshot()
+        assertTrue(snapshot.hasScore)
+        assertTrue(snapshot.debugMode)
+        assertTrue(snapshot.thresholdOverrideActive)
+        assertTrue(snapshot.maxRecentScore >= 0.4f)
     }
 
     private class FakeWakeAudioSource : WakeAudioSource {

@@ -71,6 +71,14 @@ object WakeWordDiagnostics {
         DiagnosticsLogger.wakeEvent("wake_score_threshold_crossed", "score=${"%.3f".format(score)}")
     }
 
+    fun wakeScoreDebug(snapshot: WakeScoreSnapshot) {
+        DiagnosticsLogger.wakeEvent("wake_score_debug", snapshot.summary())
+    }
+
+    fun scoreCloseToThreshold(snapshot: WakeScoreSnapshot) {
+        DiagnosticsLogger.wakeEvent("wake_score_close_to_threshold", snapshot.summary())
+    }
+
     fun debouncePrevented() {
         DiagnosticsLogger.wakeEvent("wake_debounce_prevented")
     }

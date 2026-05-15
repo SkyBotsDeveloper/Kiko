@@ -10,6 +10,9 @@ class WakeDebouncer(
     private var consecutiveFrames = 0
     private var lastWakeAtMillis = Long.MIN_VALUE
 
+    val consecutiveFrameCount: Int
+        get() = consecutiveFrames
+
     fun shouldTrigger(score: Float): Boolean {
         if (score >= threshold) {
             consecutiveFrames += 1

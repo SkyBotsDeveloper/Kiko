@@ -98,10 +98,10 @@ class TfliteWakeModelRunner(
                 WakeModelInputMode.LOG_MEL -> fillLogMelInput(frame)
                 WakeModelInputMode.UNSUPPORTED -> false
             }
-            if (!shouldRun) return 0f
+            if (!shouldRun) return Float.NaN
 
             outputBuffer[0].fill(0f)
-            val input = inputByteBuffer ?: return 0f
+            val input = inputByteBuffer ?: return Float.NaN
             input.rewind()
             activeInterpreter.run(input, outputBuffer)
             outputBuffer[0].maxOrNull()?.coerceIn(0f, 1f) ?: 0f

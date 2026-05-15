@@ -14,16 +14,19 @@ import com.skybots.kiko.memory.KikoDatabase
 import com.skybots.kiko.memory.RoomMemoryRepository
 import com.skybots.kiko.permissions.PermissionManager
 import com.skybots.kiko.wake.opensource.OpenSourceWakeWordEngine
+import com.skybots.kiko.wake.opensource.OpenSourceWakeConfig
 
 class WakeWordService : Service() {
     private lateinit var notificationHelper: WakeWordNotificationHelper
     private lateinit var memoryRepository: RoomMemoryRepository
+    private lateinit var wakeDebugSettingsStore: WakeDebugSettingsStore
     private var engine: WakeWordEngine? = null
 
     override fun onCreate() {
         super.onCreate()
         notificationHelper = WakeWordNotificationHelper(this)
         memoryRepository = RoomMemoryRepository(KikoDatabase.create(this))
+        wakeDebugSettingsStore = WakeDebugSettingsStore(this)
     }
 
     override fun onStartCommand(
@@ -148,6 +151,7 @@ class WakeWordService : Service() {
                 playShortHapticIfAvailable()
                 notificationHelper.showWakeDetectedNotification()
             }
+            is WakeWordEvent.ScoreDebug -> Unit
             is WakeWordEvent.Error -> {
                 WakeWordDiagnostics.error(event.message)
                 updateState(WakeWordEngineState.Error)
@@ -164,11 +168,25 @@ class WakeWordService : Service() {
             WakeWordConfig.ENGINE_FAKE -> FakeWakeWordEngine()
             WakeWordConfig.ENGINE_OPEN_SOURCE -> OpenSourceWakeWordEngine(
                 context = this,
-                sensitivity = config.sensitivity,
+                config = openSourceConfig(config),
                 permissionManager = PermissionManager(this),
             )
             else -> FakeWakeWordEngine()
         }
+
+    private fun openSourceConfig(config: WakeWordConfig): OpenSourceWakeConfig {
+        val base = OpenSourceWakeConfig.fromSensitivity(config.sensitivity)
+        val debugSettings = wakeDebugSettingsStore.read()
+        return if (debugSettings.enabled) {
+            base.copy(
+                threshold = debugSettings.threshold,
+                wakeDebugEnabled = true,
+                debugThresholdOverrideActive = true,
+            )
+        } else {
+            base
+        }
+    }
 
     private fun updateState(state: WakeWordEngineState) {
         WakeWordRuntime.updateState(state)
