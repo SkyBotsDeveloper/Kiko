@@ -51,6 +51,16 @@ recognition starts only after `Hey Kiko` is detected by the local wake engine
 or by the fake/manual test flow. If the app is backgrounded and Android blocks
 direct UI launch, Kiko relies on the foreground notification action.
 
+The default V2 wake lifecycle is battery-friendly screen-unlocked listening.
+When the phone screen turns off or the device locks, Kiko pauses AudioRecord and
+TFLite inference while keeping the user's wake preference enabled. Wake listening
+resumes after unlock/user-present when allowed by Android. Locked-screen or
+always-listen behavior is a future option and is not enabled by default.
+
+The in-app wake experience is orbit-first and does not use overlay permission in
+this phase. The Android foreground notification remains required while active
+background microphone wake listening is running.
+
 The open-source wake engine expects a trained local TFLite model at
 `app/src/main/assets/wake/hey_kiko.tflite`. If the model is missing, invalid, or
 not compatible with the current foundation runner, Kiko reports the problem and

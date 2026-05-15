@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.skybots.kiko.MainActivity
 import com.skybots.kiko.R
+import com.skybots.kiko.wake.opensource.WakeEngineHealthStatus
 
 class WakeWordNotificationHelper(
     private val context: Context,
@@ -34,10 +35,34 @@ class WakeWordNotificationHelper(
         notificationManager.createNotificationChannel(channel)
     }
 
-    fun listeningNotification(phrase: String = WakeWordConfig.DEFAULT_PHRASE): Notification =
+    fun listeningNotification(
+        phrase: String = WakeWordConfig.DEFAULT_PHRASE,
+        calibrationStatus: WakeCalibrationStatus = WakeCalibrationStatus.COLLECTING_BASELINE,
+        modelStatus: WakeEngineHealthStatus = WakeEngineHealthStatus.READY,
+    ): Notification {
+        val content = WakeNotificationStateMapper.contentFor(
+            phrase = phrase,
+            engineState = WakeWordEngineState.Listening,
+            calibrationStatus = calibrationStatus,
+            modelStatus = modelStatus,
+        )
+        return serviceNotification(content)
+    }
+
+    fun pausedLockedNotification(): Notification =
+        serviceNotification(
+            WakeNotificationStateMapper.contentFor(
+                phrase = WakeWordConfig.DEFAULT_PHRASE,
+                engineState = WakeWordEngineState.PausedLocked,
+                calibrationStatus = WakeCalibrationStatus.COLLECTING_BASELINE,
+                modelStatus = WakeEngineHealthStatus.READY,
+            ),
+        )
+
+    fun serviceNotification(content: WakeNotificationContent): Notification =
         baseBuilder()
-            .setContentTitle("Kiko Wake Word")
-            .setContentText("Kiko is listening for $phrase")
+            .setContentTitle(content.title)
+            .setContentText(content.text)
             .setOngoing(true)
             .addAction(
                 R.drawable.ic_kiko_orb,
@@ -55,6 +80,7 @@ class WakeWordNotificationHelper(
         baseBuilder()
             .setContentTitle("Hey Kiko detected")
             .setContentText("Tap to speak to Kiko")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setOngoing(true)
             .addAction(
                 R.drawable.ic_kiko_orb,
@@ -74,6 +100,34 @@ class WakeWordNotificationHelper(
             NotificationManagerCompat.from(appContext).notify(
                 NOTIFICATION_ID,
                 wakeDetectedNotification(),
+            )
+        }.onFailure { error ->
+            WakeWordDiagnostics.error(error.message ?: "Could not update wake notification.")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun showListeningNotification(
+        phrase: String,
+        calibrationStatus: WakeCalibrationStatus,
+        modelStatus: WakeEngineHealthStatus,
+    ) {
+        runCatching {
+            NotificationManagerCompat.from(appContext).notify(
+                NOTIFICATION_ID,
+                listeningNotification(phrase, calibrationStatus, modelStatus),
+            )
+        }.onFailure { error ->
+            WakeWordDiagnostics.error(error.message ?: "Could not update wake notification.")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun showPausedLockedNotification() {
+        runCatching {
+            NotificationManagerCompat.from(appContext).notify(
+                NOTIFICATION_ID,
+                pausedLockedNotification(),
             )
         }.onFailure { error ->
             WakeWordDiagnostics.error(error.message ?: "Could not update wake notification.")

@@ -90,6 +90,25 @@ class WakeWordServiceControllerTest {
         assertTrue(serviceStarter.simulated)
     }
 
+    @Test
+    fun stopServicePausesWithoutDisablingWakePreference() {
+        WakeWordRuntime.resetForTests()
+        val repository = InMemoryMemoryRepository()
+        val serviceStarter = FakeWakeWordServiceStarter()
+        val controller = controller(
+            repository = repository,
+            hasAudioPermission = true,
+            serviceStarter = serviceStarter,
+        )
+
+        controller.enableWakeWord()
+        val result = controller.stopService()
+
+        assertTrue(result.success)
+        assertTrue(repository.getUserPreferences().wakeWordEnabled)
+        assertTrue(serviceStarter.stopped)
+    }
+
     private fun controller(
         repository: InMemoryMemoryRepository,
         hasAudioPermission: Boolean,

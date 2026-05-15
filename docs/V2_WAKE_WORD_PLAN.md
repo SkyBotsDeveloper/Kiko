@@ -96,6 +96,26 @@ Manual mic, fake wake, and real wake all use the same compact in-app orbit
 listening UI. This is intentionally not an overlay service yet, so no overlay
 permission is required.
 
+## Orbit-first app experience
+
+The default Kiko screen is now a compact assistant orbit rather than a large
+settings-style interface. The main screen keeps only the glowing orbit, mic
+control, wake status pill, and settings gear visible. Tapping the orbit or mic
+starts manual SpeechRecognizer input. Tapping the gear opens full settings, and
+back/close returns to the orbit screen.
+
+Orbit states stay lightweight:
+
+- idle: subtle glow
+- listening: stronger pulse
+- processing: small rotating ring
+- speaking: soft pulse
+- unsafe calibration: amber ring and safety wording
+- locked/screen-off pause: dimmed orbit state
+
+Fake/Test wake and real WakeDetected use the same orbit listening route. The
+orbit is in-app only in this phase; Kiko does not request overlay permission.
+
 ## Battery strategy
 
 - Wake word is off by default.
@@ -104,6 +124,11 @@ permission is required.
 - Wake inference runs with a conservative threshold and debounce.
 - Android SpeechRecognizer is not kept active while idle.
 - AudioRecord is released before SpeechRecognizer starts.
+- Wake AudioRecord/TFLite inference pauses when the phone screen turns off or
+  the device locks by default.
+- If wake was enabled, listening resumes automatically on unlock/user-present.
+- The foreground notification clearly switches between active, unsafe-model,
+  and paused-while-locked wording.
 - No boot auto-start or battery optimization exemption is added in this phase.
 
 ## Android limitations
@@ -113,6 +138,8 @@ permission is required.
   foreground service permission.
 - Background activity launch may be restricted. If Kiko is not foreground,
   wake detection should update the notification and let the user tap to speak.
+- Kiko attempts to foreground the orbit screen on safe WakeDetected, but falls
+  back to the notification action if Android or the lock screen blocks launch.
 - Notification visibility can depend on Android notification permission and OEM
   behavior.
 

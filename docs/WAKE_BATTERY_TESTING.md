@@ -40,6 +40,9 @@ Watch for:
 - AudioRecord stops before SpeechRecognizer starts.
 - Manual mic stops wake AudioRecord before starting SpeechRecognizer.
 - Disabling wake word stops the service and releases microphone resources.
+- Turning the phone screen off or locking the device pauses wake AudioRecord and
+  TFLite inference by default while keeping the wake preference enabled.
+- Unlocking/user-present resumes wake listening only when wake had been enabled.
 - Missing model does not crash the app.
 - Feature-input models use the Android log-mel adapter and do not run inference
   more often than the configured stride.
@@ -60,5 +63,15 @@ For each `hey_kiko.tflite` candidate:
 6. Test false wake behavior in a quiet room for at least 30 minutes.
 7. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
 8. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
+
+## Screen lock policy
+
+Default V2 behavior is screen-unlocked wake listening. When the screen turns off,
+Kiko releases wake AudioRecord, stops inference work, and updates the foreground
+notification to `Kiko wake paused while phone is locked`. After unlock, Kiko
+resumes wake listening if the user had enabled `Hey Kiko`.
+
+Optional future locked-screen/always-listen modes must be measured separately
+and should not be enabled by default on low/mid-range devices.
 
 Battery optimization is a release blocker for real wake detection.

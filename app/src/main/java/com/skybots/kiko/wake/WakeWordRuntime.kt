@@ -1,9 +1,11 @@
 package com.skybots.kiko.wake
 
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.atomic.AtomicBoolean
 
 object WakeWordRuntime {
     private val listeners = CopyOnWriteArraySet<(WakeWordEvent) -> Unit>()
+    private val pendingWakeLaunch = AtomicBoolean(false)
 
     @Volatile
     private var state: WakeWordEngineState = WakeWordEngineState.Disabled
@@ -23,6 +25,7 @@ object WakeWordRuntime {
         state = when (event) {
             WakeWordEvent.Started -> WakeWordEngineState.Listening
             WakeWordEvent.Stopped -> WakeWordEngineState.Stopped
+            WakeWordEvent.PausedLocked -> WakeWordEngineState.PausedLocked
             WakeWordEvent.WakeDetected -> WakeWordEngineState.WakeDetected
             is WakeWordEvent.ScoreDebug -> state
             is WakeWordEvent.Error -> WakeWordEngineState.Error
@@ -32,6 +35,12 @@ object WakeWordRuntime {
         }
         listeners.forEach { listener -> listener(event) }
     }
+
+    fun markPendingWakeLaunch() {
+        pendingWakeLaunch.set(true)
+    }
+
+    fun consumePendingWakeLaunch(): Boolean = pendingWakeLaunch.getAndSet(false)
 
     fun publishScore(snapshot: WakeScoreSnapshot) {
         publish(WakeWordEvent.ScoreDebug(snapshot))
@@ -50,5 +59,6 @@ object WakeWordRuntime {
         listeners.clear()
         state = WakeWordEngineState.Disabled
         scoreSnapshot = WakeScoreSnapshot()
+        pendingWakeLaunch.set(false)
     }
 }

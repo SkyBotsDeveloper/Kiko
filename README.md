@@ -47,6 +47,17 @@ balanced/quality training is required before daily wake use. Manual mic, fake
 wake, and real wake use a compact in-app orbit listening UI; no overlay
 permission is used in this phase.
 
+The app is now orbit-first: opening Kiko shows a compact glowing assistant orbit
+with mic, wake status, and settings controls instead of a full settings-style
+home screen. Full settings remain available from the gear or wake status pill.
+
+To protect battery on low/mid-range phones, V2 pauses wake inference when the
+phone screen turns off or the device locks. The wake preference stays enabled,
+and the foreground notification changes to show that Kiko wake is paused while
+locked. Wake listening resumes after unlock/user-present when the user had
+enabled it. Android still requires the foreground notification whenever active
+background microphone wake listening is running.
+
 ## V1 Features
 
 - Manual mic voice input using Android SpeechRecognizer.

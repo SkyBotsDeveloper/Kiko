@@ -145,6 +145,7 @@ class WakeWordServiceController(
         return when (wakeWordEngineStateFrom(preferences.wakeWordStatus)) {
             WakeWordEngineState.PermissionMissing -> WakeWordEngineState.PermissionMissing
             WakeWordEngineState.Error -> WakeWordEngineState.Error
+            WakeWordEngineState.PausedLocked -> WakeWordEngineState.PausedLocked
             else -> WakeWordEngineState.Stopped
         }
     }
@@ -171,7 +172,7 @@ private class AndroidWakeWordServiceStarter(
     }
 
     override fun stopWakeService() {
-        appContext.startService(WakeWordService.stopIntent(appContext))
+        appContext.startService(WakeWordService.pauseIntent(appContext))
     }
 
     override fun simulateWakeDetection() {

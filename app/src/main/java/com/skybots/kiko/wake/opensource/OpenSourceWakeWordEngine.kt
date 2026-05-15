@@ -138,8 +138,13 @@ class OpenSourceWakeWordEngine(
             thresholdCrossed = triggered,
         )
 
-        if (config.wakeDebugEnabled) {
+        if (config.wakeDebugEnabled ||
+            (calibration.unsafeBaseline && inferenceCount % config.scoreLogInterval.coerceAtLeast(1) == 0L)
+        ) {
             WakeWordRuntime.publishScore(snapshot)
+        }
+
+        if (config.wakeDebugEnabled) {
             if (inferenceCount % config.scoreLogInterval.coerceAtLeast(1) == 0L) {
                 WakeWordDiagnostics.wakeScoreDebug(snapshot)
             }

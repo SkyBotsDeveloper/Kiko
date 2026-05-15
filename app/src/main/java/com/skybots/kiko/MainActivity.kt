@@ -13,11 +13,13 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +71,7 @@ import com.skybots.kiko.wake.WakeWordEngineState
 import com.skybots.kiko.wake.WakeWordEvent
 import com.skybots.kiko.wake.WakeMicArbitration
 import com.skybots.kiko.wake.WakeWordRuntime
+import com.skybots.kiko.wake.WakeWordService
 import com.skybots.kiko.wake.WakeWordServiceController
 import com.skybots.kiko.wake.WakeWordSensitivity
 import com.skybots.kiko.wake.opensource.OpenSourceWakeConfig
@@ -79,10 +82,22 @@ import com.skybots.kiko.wake.opensource.WakeModelSelfTest
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (intent?.getBooleanExtra(WakeWordService.EXTRA_WAKE_DETECTED, false) == true) {
+            WakeWordRuntime.markPendingWakeLaunch()
+        }
         setContent {
             KikoTheme {
                 KikoApp()
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(WakeWordService.EXTRA_WAKE_DETECTED, false)) {
+            WakeWordRuntime.markPendingWakeLaunch()
+            WakeWordRuntime.publish(WakeWordEvent.WakeDetected)
         }
     }
 }
@@ -497,6 +512,10 @@ private fun KikoApp() {
                     wakeWordStatus = wakeWordController.getStatus()
                     uiState = uiState.copy(statusMessage = "Wake-word service stopped.")
                 }
+                WakeWordEvent.PausedLocked -> {
+                    wakeWordStatus = WakeWordEngineState.PausedLocked
+                    uiState = uiState.copy(statusMessage = "Wake paused while phone is locked.")
+                }
                 WakeWordEvent.WakeDetected -> {
                     wakeWordStatus = WakeWordEngineState.WakeDetected
                     startListeningFromWakeWord()
@@ -517,6 +536,15 @@ private fun KikoApp() {
         onDispose { unsubscribe() }
     }
 
+    LaunchedEffect(Unit) {
+        if (WakeWordRuntime.consumePendingWakeLaunch() ||
+            activity.intent?.getBooleanExtra(WakeWordService.EXTRA_WAKE_DETECTED, false) == true
+        ) {
+            activity.intent?.removeExtra(WakeWordService.EXTRA_WAKE_DETECTED)
+            startListeningFromWakeWord()
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             speechRecognizerManager.destroy()
@@ -525,6 +553,12 @@ private fun KikoApp() {
     }
 
     if (showSettings) {
+        BackHandler {
+            refreshPermissionStatuses()
+            systemBrightnessControlAllowed = Settings.System.canWrite(context)
+            refreshWakeWordStatus()
+            showSettings = false
+        }
         KikoSettingsScreen(
             preferences = preferences,
             permissionStatuses = permissionStatuses,
@@ -673,6 +707,8 @@ private fun KikoApp() {
             uiState = uiState,
             permissionStatuses = permissionStatuses,
             wakeWordState = wakeWordStatus,
+            wakeModelHealth = wakeModelHealth,
+            wakeScoreSnapshot = wakeScoreSnapshot,
             onMicClick = {
                 refreshPermissionStatuses()
                 if (permissionManager.hasRecordAudioPermission()) {

@@ -7,6 +7,7 @@ enum class WakeWordEngineState(
     PermissionMissing("Permission needed"),
     Starting("Starting"),
     Listening("Listening"),
+    PausedLocked("Paused while locked"),
     WakeDetected("Wake detected"),
     Error("Error"),
     Stopped("Stopped"),

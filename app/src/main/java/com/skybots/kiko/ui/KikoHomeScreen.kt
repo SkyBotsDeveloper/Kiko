@@ -1,5 +1,6 @@
 package com.skybots.kiko.ui
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -13,6 +14,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,9 +25,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Settings
@@ -40,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -48,9 +51,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.skybots.kiko.app.KikoAppConfig
 import com.skybots.kiko.assistant.AssistantRuntimeState
-import com.skybots.kiko.creator.CreatorIdentity
 import com.skybots.kiko.permissions.KikoPermission
 import com.skybots.kiko.permissions.PermissionStatus
 import com.skybots.kiko.ui.theme.KikoAccent
@@ -59,18 +60,30 @@ import com.skybots.kiko.ui.theme.KikoBorder
 import com.skybots.kiko.ui.theme.KikoMutedText
 import com.skybots.kiko.ui.theme.KikoSurface
 import com.skybots.kiko.ui.theme.KikoTheme
+import com.skybots.kiko.wake.WakeCalibrationStatus
+import com.skybots.kiko.wake.WakeScoreSnapshot
 import com.skybots.kiko.wake.WakeWordEngineState
+import com.skybots.kiko.wake.opensource.WakeEngineHealth
+import com.skybots.kiko.wake.opensource.WakeEngineHealthStatus
 
 @Composable
 fun KikoHomeScreen(
     uiState: KikoHomeUiState,
     permissionStatuses: List<PermissionStatus>,
     wakeWordState: WakeWordEngineState,
+    wakeModelHealth: WakeEngineHealth,
+    wakeScoreSnapshot: WakeScoreSnapshot,
     onMicClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onWakeStatusClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val orbitState = orbitVisualState(
+        runtimeState = uiState.runtimeState,
+        wakeWordState = wakeWordState,
+        calibrationStatus = wakeScoreSnapshot.calibrationStatus,
+    )
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -79,167 +92,153 @@ fun KikoHomeScreen(
             .navigationBarsPadding()
             .padding(horizontal = 18.dp, vertical = 14.dp),
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .size(44.dp),
         ) {
-            KikoHeader(
-                uiState = uiState,
-                onSettingsClick = onSettingsClick,
+            Icon(
+                imageVector = Icons.Rounded.Settings,
+                contentDescription = "Open settings",
+                tint = KikoMutedText,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            OrbitWakeStatusPill(
                 wakeWordState = wakeWordState,
-                onWakeStatusClick = onWakeStatusClick,
+                wakeModelHealth = wakeModelHealth,
+                wakeScoreSnapshot = wakeScoreSnapshot,
+                onClick = onWakeStatusClick,
             )
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
+            KikoOrbit(
+                orbitState = orbitState,
+                onClick = onMicClick,
+            )
+
+            Text(
+                text = orbitStatusText(
+                    wakeWordState = wakeWordState,
+                    wakeModelHealth = wakeModelHealth,
+                    wakeScoreSnapshot = wakeScoreSnapshot,
+                    runtimeState = uiState.runtimeState,
+                ),
+                color = if (orbitState == OrbitVisualState.NEEDS_MODEL) KikoWarning else Color.White,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
+
+            Text(
+                text = orbitSupportText(
+                    wakeWordState = wakeWordState,
+                    wakeScoreSnapshot = wakeScoreSnapshot,
+                    uiState = uiState,
+                ),
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
-                KikoOrb(isListening = uiState.runtimeState == AssistantRuntimeState.LISTENING)
-                Spacer(modifier = Modifier.height(16.dp))
                 MicButton(
                     isListening = uiState.runtimeState == AssistantRuntimeState.LISTENING,
                     isEnabled = uiState.runtimeState != AssistantRuntimeState.PROCESSING &&
                         uiState.runtimeState != AssistantRuntimeState.SPEAKING,
                     onClick = onMicClick,
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                TrySayingSection()
-                Spacer(modifier = Modifier.height(14.dp))
-                AssistantTextPlaceholders(
-                    transcript = uiState.transcript,
-                    response = uiState.kikoResponse,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                Surface(
+                    color = KikoSurface,
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, KikoBorder),
+                ) {
+                    Text(
+                        text = uiState.runtimeState.label,
+                        color = KikoAccent,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                    )
+                }
             }
 
+            LastInteractionCompact(
+                transcript = uiState.transcript,
+                response = uiState.kikoResponse,
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            TrySayingStrip()
             PermissionStatusSection(permissionStatuses = permissionStatuses)
         }
-        if (shouldShowListeningOrbit(uiState.runtimeState)) {
-            ListeningOrbitOverlay(
-                transcript = uiState.transcript,
-                statusMessage = uiState.statusMessage,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
     }
 }
 
 @Composable
-private fun KikoHeader(
-    uiState: KikoHomeUiState,
-    onSettingsClick: () -> Unit,
+private fun OrbitWakeStatusPill(
     wakeWordState: WakeWordEngineState,
-    onWakeStatusClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(modifier = Modifier.size(44.dp))
-            Text(
-                text = KikoAppConfig.APP_NAME,
-                color = Color.White,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = "Open settings",
-                    tint = KikoMutedText,
-                )
-            }
-        }
-        Text(
-            text = "Offline-first Android assistant by ${CreatorIdentity.NAME}",
-            color = KikoMutedText,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        RuntimeStatusLine(uiState = uiState)
-        Spacer(modifier = Modifier.height(8.dp))
-        WakeWordStatusLine(
-            wakeWordState = wakeWordState,
-            onClick = onWakeStatusClick,
-        )
-    }
-}
-
-@Composable
-private fun RuntimeStatusLine(uiState: KikoHomeUiState) {
-    Surface(
-        color = KikoSurface,
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, KikoBorder),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = uiState.runtimeState.label,
-                color = KikoAccent,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = uiState.statusMessage,
-                color = KikoMutedText,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WakeWordStatusLine(
-    wakeWordState: WakeWordEngineState,
+    wakeModelHealth: WakeEngineHealth,
+    wakeScoreSnapshot: WakeScoreSnapshot,
     onClick: () -> Unit,
 ) {
+    val unsafe = wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.NEEDS_BETTER_MODEL ||
+        wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.UNSAFE_BASELINE
+    val text = when {
+        wakeWordState == WakeWordEngineState.PausedLocked -> "Wake paused"
+        unsafe -> "Wake trigger blocked"
+        wakeWordState == WakeWordEngineState.Listening -> "Hey Kiko active"
+        wakeWordState == WakeWordEngineState.Disabled -> "Wake off"
+        else -> wakeWordState.label
+    }
+    val detail = when {
+        unsafe -> "${wakeModelHealth.status.label} - ${wakeScoreSnapshot.calibrationStatus.label}"
+        else -> wakeModelHealth.status.label
+    }
+
     Surface(
-        color = KikoSurface,
+        color = KikoSurface.copy(alpha = 0.86f),
         shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, KikoBorder),
+        border = BorderStroke(1.dp, if (unsafe) KikoWarning.copy(alpha = 0.55f) else KikoBorder),
         modifier = Modifier.clickable(onClick = onClick),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Wake word",
-                color = KikoMutedText,
-                style = MaterialTheme.typography.bodySmall,
+                text = text,
+                color = if (unsafe) KikoWarning else KikoAccent,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
             )
             Text(
-                text = wakeWordState.label,
-                color = if (wakeWordState == WakeWordEngineState.Listening) KikoAccent else Color.White,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
+                text = detail,
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -248,28 +247,46 @@ private fun WakeWordStatusLine(
 }
 
 @Composable
-private fun KikoOrb(isListening: Boolean) {
-    val transition = rememberInfiniteTransition(label = "kiko-orb")
+private fun KikoOrbit(
+    orbitState: OrbitVisualState,
+    onClick: () -> Unit,
+) {
+    val transition = rememberInfiniteTransition(label = "kiko-orbit")
     val pulse = transition.animateFloat(
-        initialValue = if (isListening) 0.82f else 0.72f,
-        targetValue = if (isListening) 1.08f else 1f,
+        initialValue = orbitState.pulseStart,
+        targetValue = orbitState.pulseEnd,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = if (isListening) 900 else 1600),
+            animation = tween(durationMillis = orbitState.pulseDurationMillis),
             repeatMode = RepeatMode.Reverse,
         ),
-        label = "orb-pulse",
+        label = "orbit-pulse",
+    )
+    val rotation = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1800, easing = LinearEasing),
+        ),
+        label = "orbit-ring",
     )
 
-    Canvas(modifier = Modifier.size(132.dp)) {
+    Canvas(
+        modifier = Modifier
+            .size(184.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+    ) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val glowRadius = size.minDimension * 0.46f
-        val coreRadius = size.minDimension * 0.16f
+        val coreRadius = size.minDimension * 0.13f
+        val ringRadius = size.minDimension * 0.31f
+        val ringColor = orbitState.color
 
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    KikoAccent.copy(alpha = 0.34f * pulse.value),
-                    KikoAccent.copy(alpha = 0.08f * pulse.value),
+                    ringColor.copy(alpha = orbitState.glowAlpha * pulse.value),
+                    ringColor.copy(alpha = 0.08f * pulse.value),
                     Color.Transparent,
                 ),
                 center = center,
@@ -279,22 +296,33 @@ private fun KikoOrb(isListening: Boolean) {
             center = center,
         )
         drawCircle(
-            color = KikoAccent.copy(alpha = 0.52f),
-            radius = coreRadius * 1.9f,
+            color = ringColor.copy(alpha = 0.46f),
+            radius = ringRadius,
             center = center,
-            style = Stroke(width = 1.5.dp.toPx()),
+            style = Stroke(width = 1.4.dp.toPx()),
         )
+        if (orbitState == OrbitVisualState.PROCESSING) {
+            drawArc(
+                color = ringColor.copy(alpha = 0.75f),
+                startAngle = rotation.value,
+                sweepAngle = 120f,
+                useCenter = false,
+                topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
+                size = Size(ringRadius * 2f, ringRadius * 2f),
+                style = Stroke(width = 3.dp.toPx()),
+            )
+        }
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.95f),
-                    KikoAccent.copy(alpha = 0.9f),
-                    KikoAccent.copy(alpha = 0.18f),
+                    Color.White.copy(alpha = if (orbitState == OrbitVisualState.PAUSED) 0.5f else 0.95f),
+                    ringColor.copy(alpha = if (orbitState == OrbitVisualState.PAUSED) 0.38f else 0.92f),
+                    ringColor.copy(alpha = 0.16f),
                 ),
                 center = center,
-                radius = coreRadius * 1.35f,
+                radius = coreRadius * 1.5f,
             ),
-            radius = coreRadius,
+            radius = coreRadius * pulse.value,
             center = center,
         )
     }
@@ -309,7 +337,7 @@ private fun MicButton(
     FilledIconButton(
         onClick = onClick,
         enabled = isEnabled,
-        modifier = Modifier.size(58.dp),
+        modifier = Modifier.size(54.dp),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = if (isListening) Color.White else KikoAccent,
             contentColor = KikoBackground,
@@ -320,52 +348,37 @@ private fun MicButton(
         Icon(
             imageVector = Icons.Rounded.Mic,
             contentDescription = if (isListening) "Listening" else "Start voice input",
-            modifier = Modifier.size(26.dp),
+            modifier = Modifier.size(25.dp),
         )
     }
 }
 
 @Composable
-private fun ListeningOrbitOverlay(
+private fun LastInteractionCompact(
     transcript: String,
-    statusMessage: String,
-    modifier: Modifier = Modifier,
+    response: String,
 ) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp),
-        color = KikoSurface.copy(alpha = 0.94f),
+        modifier = Modifier.fillMaxWidth(),
+        color = KikoSurface.copy(alpha = 0.72f),
         shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, KikoAccent.copy(alpha = 0.35f)),
-        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, KikoBorder),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            KikoOrb(isListening = true)
             Text(
-                text = "Kiko is listening",
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = if (statusMessage.isBlank()) "Listening..." else statusMessage,
-                color = KikoAccent,
+                text = transcript,
+                color = Color.White.copy(alpha = 0.82f),
                 style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = transcript,
+                text = response,
                 color = KikoMutedText,
                 style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -374,87 +387,27 @@ private fun ListeningOrbitOverlay(
 }
 
 @Composable
-private fun AssistantTextPlaceholders(
-    transcript: String,
-    response: String,
-) {
-    Column(
+@OptIn(ExperimentalLayoutApi::class)
+private fun TrySayingStrip() {
+    FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        PlaceholderLine(
-            label = "Transcript",
-            value = transcript,
-        )
-        PlaceholderLine(
-            label = "Last result",
-            value = response,
-        )
-    }
-}
-
-@Composable
-private fun TrySayingSection() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = KikoSurface,
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, KikoBorder),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp),
-        ) {
-            Text(
-                text = "Try saying",
-                color = KikoAccent,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-            )
-            listOf(
-                "Open Telegram",
-                "Call mummy",
-                "Torch jalao",
-                "Volume 50 karo",
-                "Kal 6 baje alarm lagao",
-            ).forEach { example ->
+        listOf("Open Telegram", "Call mummy", "Torch jalao", "Volume 50", "Kal 6 baje alarm").forEach {
+            Surface(
+                color = KikoSurface.copy(alpha = 0.68f),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, KikoBorder),
+            ) {
                 Text(
-                    text = example,
-                    color = Color.White.copy(alpha = 0.78f),
-                    style = MaterialTheme.typography.bodySmall,
+                    text = it,
+                    color = KikoMutedText,
+                    style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderLine(
-    label: String,
-    value: String,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = KikoSurface,
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, KikoBorder),
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
-            Text(
-                text = label,
-                color = KikoAccent,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                color = Color.White.copy(alpha = 0.86f),
-                style = MaterialTheme.typography.bodyMedium,
-            )
         }
     }
 }
@@ -470,44 +423,31 @@ private fun PermissionStatusSection(permissionStatuses: List<PermissionStatus>) 
     }
     if (relevantStatuses.isEmpty()) return
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(KikoSurface)
-            .border(width = 1.dp, color = KikoBorder, shape = RoundedCornerShape(8.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            text = "Permission status",
-            color = Color.White,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-        )
-        relevantStatuses.forEach { status ->
-            PermissionStatusRow(status = status)
-        }
-    }
-}
-
-@Composable
-private fun PermissionStatusRow(status: PermissionStatus) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+        color = KikoSurface.copy(alpha = 0.82f),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, KikoBorder),
     ) {
-        Text(
-            text = status.permission.displayName,
-            color = KikoMutedText,
-            style = MaterialTheme.typography.bodySmall,
-        )
-        Text(
-            text = status.stateLabel,
-            color = if (status.isGranted) KikoAccent else Color.White.copy(alpha = 0.72f),
-            style = MaterialTheme.typography.labelMedium,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Needs",
+                color = KikoAccent,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = relevantStatuses.joinToString { it.permission.displayName },
+                color = KikoMutedText,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -521,8 +461,86 @@ private val AssistantRuntimeState.label: String
         AssistantRuntimeState.ERROR -> "Error"
     }
 
+internal enum class OrbitVisualState(
+    val color: Color,
+    val glowAlpha: Float,
+    val pulseStart: Float,
+    val pulseEnd: Float,
+    val pulseDurationMillis: Int,
+) {
+    IDLE(KikoAccent, 0.28f, 0.86f, 1f, 1800),
+    LISTENING(KikoAccent, 0.48f, 0.78f, 1.12f, 850),
+    PROCESSING(KikoAccent, 0.34f, 0.9f, 1.04f, 1200),
+    SPEAKING(KikoAccent, 0.4f, 0.82f, 1.08f, 1050),
+    NEEDS_MODEL(KikoWarning, 0.3f, 0.86f, 1.02f, 1700),
+    ERROR(KikoDanger, 0.3f, 0.88f, 1.03f, 1700),
+    PAUSED(KikoMutedText, 0.16f, 0.92f, 1f, 2200),
+}
+
+internal fun orbitVisualState(
+    runtimeState: AssistantRuntimeState,
+    wakeWordState: WakeWordEngineState,
+    calibrationStatus: WakeCalibrationStatus,
+): OrbitVisualState =
+    when {
+        runtimeState == AssistantRuntimeState.LISTENING -> OrbitVisualState.LISTENING
+        runtimeState == AssistantRuntimeState.PROCESSING ||
+            runtimeState == AssistantRuntimeState.EXECUTING -> OrbitVisualState.PROCESSING
+        runtimeState == AssistantRuntimeState.SPEAKING -> OrbitVisualState.SPEAKING
+        runtimeState == AssistantRuntimeState.ERROR -> OrbitVisualState.ERROR
+        wakeWordState == WakeWordEngineState.PausedLocked -> OrbitVisualState.PAUSED
+        calibrationStatus == WakeCalibrationStatus.NEEDS_BETTER_MODEL ||
+            calibrationStatus == WakeCalibrationStatus.UNSAFE_BASELINE -> OrbitVisualState.NEEDS_MODEL
+        else -> OrbitVisualState.IDLE
+    }
+
 internal fun shouldShowListeningOrbit(state: AssistantRuntimeState): Boolean =
     state == AssistantRuntimeState.LISTENING || state == AssistantRuntimeState.PROCESSING
+
+internal fun orbitStatusText(
+    wakeWordState: WakeWordEngineState,
+    wakeModelHealth: WakeEngineHealth,
+    wakeScoreSnapshot: WakeScoreSnapshot,
+    runtimeState: AssistantRuntimeState,
+): String =
+    when {
+        runtimeState == AssistantRuntimeState.LISTENING -> "Kiko is listening"
+        runtimeState == AssistantRuntimeState.PROCESSING -> "Processing speech"
+        runtimeState == AssistantRuntimeState.EXECUTING -> "Running local action"
+        runtimeState == AssistantRuntimeState.SPEAKING -> "Kiko is speaking"
+        wakeWordState == WakeWordEngineState.PausedLocked -> "Wake paused while phone is locked"
+        wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.NEEDS_BETTER_MODEL ||
+            wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.UNSAFE_BASELINE ->
+            "Wake listening, model needs better training"
+        wakeWordState == WakeWordEngineState.Listening &&
+            wakeModelHealth.status in readyModelStates -> "Hey Kiko listening"
+        wakeWordState == WakeWordEngineState.Disabled -> "Tap to talk"
+        else -> wakeWordState.label
+    }
+
+private fun orbitSupportText(
+    wakeWordState: WakeWordEngineState,
+    wakeScoreSnapshot: WakeScoreSnapshot,
+    uiState: KikoHomeUiState,
+): String =
+    when {
+        wakeWordState == WakeWordEngineState.PausedLocked ->
+            "Kiko will resume wake listening after unlock if Hey Kiko is still enabled."
+        wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.NEEDS_BETTER_MODEL ||
+            wakeScoreSnapshot.calibrationStatus == WakeCalibrationStatus.UNSAFE_BASELINE ->
+            "Wake trigger is blocked for safety. This sanity model is for pipeline testing; train a balanced/quality model for real wake use."
+        uiState.runtimeState == AssistantRuntimeState.IDLE -> "Tap the orbit or mic for manual voice."
+        else -> uiState.statusMessage
+    }
+
+private val readyModelStates = setOf(
+    WakeEngineHealthStatus.READY,
+    WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE,
+    WakeEngineHealthStatus.LOG_MEL_COMPATIBLE,
+)
+
+private val KikoWarning = Color(0xFFFFC267)
+private val KikoDanger = Color(0xFFFF6B6B)
 
 @Preview(showBackground = true, backgroundColor = 0xFF06080D)
 @Composable
@@ -533,7 +551,12 @@ private fun KikoHomeScreenPreview() {
             permissionStatuses = KikoPermission.entries.map { permission ->
                 PermissionStatus(permission = permission, isGranted = false)
             },
-            wakeWordState = WakeWordEngineState.Disabled,
+            wakeWordState = WakeWordEngineState.Listening,
+            wakeModelHealth = WakeEngineHealth.logMelCompatible(32, 118),
+            wakeScoreSnapshot = WakeScoreSnapshot(
+                calibrationStatus = WakeCalibrationStatus.NEEDS_BETTER_MODEL,
+                baselineScore = 0.501f,
+            ),
             onMicClick = {},
             onSettingsClick = {},
             onWakeStatusClick = {},

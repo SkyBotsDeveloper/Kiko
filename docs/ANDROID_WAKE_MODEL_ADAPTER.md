@@ -78,6 +78,11 @@ protects against sanity models that output about `0.50` for everything.
 The unsafe calibration override is debug-only behavior for diagnosis. It may
 false trigger and should not be used for daily wake listening.
 
+The orbit UI reflects this distinction: the wake service can be `Listening` and
+the model can be `Ready, log-mel` while the wake trigger is still blocked for
+safety because calibration needs a better model. This avoids presenting the
+sanity model as broken service behavior.
+
 ## Validation Before Claiming Real Wake
 
 Do not treat the model as production-ready until:

@@ -35,6 +35,14 @@ object WakeWordDiagnostics {
         DiagnosticsLogger.wakeEvent("wake_flow_started")
     }
 
+    fun pausedForLockedScreen() {
+        DiagnosticsLogger.wakeEvent("wake_paused_locked_screen")
+    }
+
+    fun resumedAfterUnlock() {
+        DiagnosticsLogger.wakeEvent("wake_resumed_after_unlock")
+    }
+
     fun openSourceEngineSelected() {
         DiagnosticsLogger.wakeEvent("wake_open_source_engine_selected")
     }
