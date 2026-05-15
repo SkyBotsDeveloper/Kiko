@@ -89,6 +89,12 @@ PROFILES: dict[str, ProfileSettings] = {
     ),
 }
 
+PROFILE_DESCRIPTIONS: dict[str, str] = {
+    "sanity": "small synthetic dataset; verifies the pipeline only, not accuracy",
+    "balanced": "GTX 1650-safe first usable model target with more synthetic data/noise",
+    "quality": "larger synthetic dataset, harder negatives, checkpoints/resume, longer training",
+}
+
 
 @dataclass(frozen=True)
 class TrainingConfig:
@@ -726,6 +732,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"Wake phrase: {config.phrase}")
         print(f"Model name: {config.model_name}")
         print(f"Profile: {config.profile}")
+        print(f"Profile purpose: {PROFILE_DESCRIPTIONS[config.profile]}")
         print(f"Output dir: {config.output_dir}")
         print(f"Data dir: {config.data_dir}")
         if config.profile == "quality":

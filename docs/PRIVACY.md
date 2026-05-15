@@ -35,3 +35,7 @@ The wake training toolkit is local-first. User-recorded wake samples, negative
 audio, generated samples, checkpoints, and exported models are ignored by Git
 and should not be uploaded to hosted services unless the user intentionally does
 so with proper consent.
+
+The beginner wake-training path does not require manual voice recording. It uses
+synthetic positives and generated/free negatives first. Any optional real voice
+samples should stay local unless the user explicitly chooses otherwise.

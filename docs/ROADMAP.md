@@ -28,8 +28,9 @@ The current V2 direction intentionally avoids Picovoice Porcupine. Kiko uses an
 open-source local AudioRecord/TFLite foundation and needs a trained `Hey Kiko`
 TFLite model before real wake detection can be claimed. The repo-local training
 toolkit now provides a Python 3.10 log-mel CNN backend with sanity, balanced,
-and quality profiles; Android still needs matching feature preprocessing for
-that model family.
+and quality profiles plus a beginner Colab notebook that uses synthetic
+positives and free/generated negatives; Android still needs matching feature
+preprocessing for that model family.
 
 ## V3: Accessibility automation
 

@@ -25,8 +25,11 @@ manual mic input or a wake-detected event.
 The open-source local engine expects a trained TFLite model at
 `app/src/main/assets/wake/hey_kiko.tflite`. Until that model is available and
 compatible, Kiko reports the model status clearly and keeps manual mic plus
-Fake/Test wake available. The repo includes `tools/wake_training/` for pinned
-local/Colab training so Kiko is not dependent on paid or broken hosted trainers.
+Fake/Test wake available. The repo includes `tools/wake_training/` for a
+beginner-friendly Colab-first training path, so Kiko is not dependent on paid or
+broken hosted trainers. The first model can be trained from synthetic positives
+and free/generated negatives without manually recording the user's voice.
+
 The current training backend exports a log-mel TFLite classifier and documents
 the Android feature-adapter work still needed before real wake detection can be
 claimed.
@@ -78,7 +81,8 @@ See `docs/ANDROID_LIMITATIONS.md`, `docs/PRIVACY.md`,
 `docs/V2_WAKE_WORD_PLAN.md` for details. Wake-model training and battery testing
 notes live in `docs/OPEN_SOURCE_WAKE_MODEL.md` and
 `docs/WAKE_BATTERY_TESTING.md`. Training toolkit details live in
-`tools/wake_training/README.md`.
+`tools/wake_training/README.md`, and the Android log-mel adapter plan is in
+`docs/ANDROID_WAKE_MODEL_ADAPTER.md`.
 
 ## Build Instructions
 

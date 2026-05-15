@@ -41,12 +41,27 @@ That is a feature tensor, not raw waveform audio. The Android
 but it cannot run real detection from this model until the same log-mel
 preprocessing is implemented in Kotlin or bundled into the TFLite model.
 
+See `docs/ANDROID_WAKE_MODEL_ADAPTER.md` for the next Android implementation
+plan. Until that adapter exists, a trained model can be exported, inspected, and
+installed for status testing, but live wake detection should not be presented as
+ready.
+
 Python preprocessing details:
 
 - 16 kHz mono audio.
 - Fixed 1.2-1.4 second window depending on profile.
 - `n_fft=400`, `win_length=400`, `hop_length=160`.
 - log-mel power spectrogram normalized to roughly `[-1.0, 1.0]`.
+
+## Synthetic-first dataset
+
+The beginner workflow does not require manual voice recording. It uses:
+
+- synthetic positive `Hey Kiko` phrases from local/free TTS,
+- generated silence/noise baseline negatives,
+- generated hard negatives such as `hey google`, `hey siri`, `okay google`,
+  `hey key`, `hey keto`, and `hello kiko`,
+- optional public datasets or real recordings later for quality improvement.
 
 ## Inspect a model
 

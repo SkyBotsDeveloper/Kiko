@@ -1,92 +1,39 @@
 # Colab Training Guide
 
-Use this path when local WSL/Linux is unavailable. The goal is to avoid
-Colab's global Python packages, which can change and break old notebooks.
-
-The repo-local backend trains a small log-mel CNN and exports TFLite. It does
-not use hosted wake-word trainers, Picovoice, API keys, or cloud wake detection.
-
-## 1. Start a fresh Colab notebook
-
-Use a CPU runtime for the first sanity run. Switch to GPU only after the
-dataset layout and dependencies work.
-
-## 2. Install micromamba
-
-```bash
-!curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-!./bin/micromamba shell init -s bash -p ~/micromamba
-```
-
-If Colab asks for a shell restart, run the next cells with the full
-`~/micromamba/bin/micromamba` path.
-
-## 3. Clone Kiko and create the pinned environment
-
-```bash
-!git clone https://github.com/SkyBotsDeveloper/Kiko.git
-%cd Kiko
-!git checkout v2-wake-word
-!~/micromamba/bin/micromamba create -y -f tools/wake_training/environment.yml
-```
-
-Target Python is 3.10.
-
-## 4. Add local dataset files
-
-Recommended layout:
+The easiest training path is the checked-in notebook:
 
 ```text
-tools/wake_training/data/
-  positive/
-    hey_kiko/
-  negative/
-  background_noise/
-  validation/
-    positive/
-    negative/
+tools/wake_training/Kiko_Hey_Kiko_Training_Colab.ipynb
 ```
 
-Mount Drive or upload a ZIP, then unpack into that layout. Do not commit
-datasets. Keep consent records for any voice samples.
+Open it in Google Colab, select GPU runtime, and run the cells in order.
 
-## 5. Run training
+## What the notebook does
 
-Sanity:
+1. Installs pinned Python dependencies and `espeak-ng`.
+2. Generates synthetic `Hey Kiko` positive samples.
+3. Generates free baseline negative/noise data and hard negatives.
+4. Runs sanity training.
+5. Lets you opt into balanced or quality training.
+6. Exports `hey_kiko.tflite`.
+7. Runs `export_check.py`.
+8. Downloads `hey_kiko.tflite` and `training_report.json`.
 
-```bash
-!~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/train_hey_kiko.py --profile sanity
-```
+You do not need to record your own voice for the first model. Real recordings
+can improve quality later, but they are optional and should never be committed.
 
-Balanced:
+## Why this path exists
 
-```bash
-!~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/train_hey_kiko.py --profile balanced
-```
+Public hosted trainers can be paid, unavailable, or pinned to fragile notebooks.
+Kiko keeps this local/Colab workflow so training does not depend on Picovoice,
+paid SDKs, API keys, hosted wake-word trainers, or cloud wake detection.
 
-Quality with checkpoint resume:
+## Quality choice
 
-```bash
-!~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/train_hey_kiko.py --profile quality --resume
-```
+- Start with `sanity` to confirm the pipeline.
+- Use `balanced` for the first usable model target.
+- Use `quality` when you can wait longer and want more synthetic data,
+  harder negatives, checkpoints, and safer threshold tuning.
 
-If GPU memory is tight:
-
-```bash
-!~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/train_hey_kiko.py --profile balanced --batch-size 8 --max-vram-gb 2.5
-```
-
-## 6. Check export
-
-```bash
-!~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/export_check.py \
-  tools/wake_training/output/hey_kiko.tflite
-```
-
-The current backend should report `feature-input-needs-adapter`; Android needs
-matching log-mel preprocessing before real wake detection.
+The model still needs real-device validation. The current Android runtime also
+needs a log-mel feature adapter before this model can run live wake detection.

@@ -10,9 +10,14 @@ a free/open-source local wake-word pipeline that can run on Android with
 TensorFlow Lite.
 
 The project now includes `tools/wake_training/` so Kiko is not blocked by paid
-or unavailable hosted training UIs. The current backend trains a local log-mel
-CNN with TensorFlow/Keras and exports TFLite, with sanity/balanced/quality
-profiles for safe GTX 1650-class experimentation.
+or unavailable hosted training UIs. The primary path is now a beginner-friendly
+Colab notebook that generates synthetic positives, prepares free negative/noise
+data, trains, exports, checks, and downloads `hey_kiko.tflite`. Manual voice
+recording is optional, not required.
+
+The current backend trains a local log-mel CNN with TensorFlow/Keras and exports
+TFLite, with sanity/balanced/quality profiles for safe GTX 1650-class
+experimentation.
 
 Current engine options:
 
@@ -62,6 +67,9 @@ repo-local trainer exports a log-mel feature model, so Android reports it as
 `Feature adapter needed` until matching Kotlin preprocessing is implemented.
 Do not claim real wake detection works until model compatibility and real-phone
 tests pass.
+
+The next Android runtime step is documented in
+`docs/ANDROID_WAKE_MODEL_ADAPTER.md`.
 
 ## Battery strategy
 

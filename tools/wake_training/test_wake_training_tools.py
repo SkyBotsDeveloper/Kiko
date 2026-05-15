@@ -5,7 +5,10 @@ import unittest
 from pathlib import Path
 
 import export_check
+import create_colab_notebook
+import generate_synthetic_positives
 import install_model_to_app
+import prepare_free_negatives
 import train_hey_kiko
 
 
@@ -22,6 +25,60 @@ class WakeTrainingToolsTest(unittest.TestCase):
         self.assertEqual("hey_kiko", config.model_name)
         self.assertEqual("balanced", config.profile)
         self.assertEqual(train_hey_kiko.PROFILES["balanced"].batch_size, config.batch_size)
+        self.assertIn("first usable", train_hey_kiko.PROFILE_DESCRIPTIONS["balanced"])
+
+    def test_synthetic_generator_defaults_to_hey_kiko(self):
+        config = generate_synthetic_positives.build_config([])
+
+        self.assertEqual("hey kiko", config.phrase)
+        self.assertEqual(1000, config.count)
+        self.assertEqual("espeak-ng", config.backend)
+        self.assertFalse(config.hard_negative)
+
+    def test_hard_negative_phrase_list_contains_similar_wakes(self):
+        hard_negatives = set(generate_synthetic_positives.HARD_NEGATIVE_PHRASES)
+
+        self.assertIn("hey google", hard_negatives)
+        self.assertIn("hey siri", hard_negatives)
+        self.assertIn("hey keto", hard_negatives)
+        self.assertIn("hello kiko", hard_negatives)
+
+    def test_prepare_free_negatives_defaults_to_sanity_profile(self):
+        config = prepare_free_negatives.build_config([])
+
+        self.assertEqual("sanity", config.profile)
+        self.assertGreater(prepare_free_negatives.NEGATIVE_PROFILES["quality"].hard_negative_count, 0)
+
+    def test_prepare_free_negatives_missing_dependency_behavior(self):
+        original = prepare_free_negatives.import_numpy
+        prepare_free_negatives.import_numpy = lambda: (_ for _ in ()).throw(
+            prepare_free_negatives.NegativePreparationError("missing numpy"),
+        )
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaises(prepare_free_negatives.NegativePreparationError):
+                    prepare_free_negatives.generate_noise_set(
+                        output_dir=Path(temp_dir),
+                        prefix="test",
+                        count=1,
+                        seconds=0.1,
+                        sample_rate_hz=16_000,
+                        rng=__import__("random").Random(1),
+                    )
+        finally:
+            prepare_free_negatives.import_numpy = original
+
+    def test_colab_notebook_exists_and_generator_has_required_steps(self):
+        notebook = create_colab_notebook.notebook_json()
+        source = "\n".join(
+            "".join(cell.get("source", []))
+            for cell in notebook["cells"]
+        )
+
+        self.assertTrue(create_colab_notebook.NOTEBOOK_PATH.exists())
+        self.assertIn("generate_synthetic_positives.py", source)
+        self.assertIn("prepare_free_negatives.py", source)
+        self.assertIn("export_check.py", source)
 
     def test_dataset_validation_reports_missing_folders(self):
         with tempfile.TemporaryDirectory() as temp_dir:

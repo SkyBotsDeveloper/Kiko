@@ -3,6 +3,10 @@
 Keep local training audio here. Do not commit recorded voices, generated
 samples, datasets, or experiment outputs.
 
+Manual voice recording is optional. The beginner path uses
+`generate_synthetic_positives.py` and `prepare_free_negatives.py` to populate
+these folders without recording your own voice.
+
 Expected layout:
 
 ```text

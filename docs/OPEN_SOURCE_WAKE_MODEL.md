@@ -41,8 +41,12 @@ python tools/wake_training/export_check.py tools/wake_training/output/hey_kiko.t
 
 ## Training direction
 
-The repo now includes a practical local backend in
-`tools/wake_training/train_hey_kiko.py`. It trains a small mobile-friendly
+The repo now includes a practical Colab-first backend. The beginner path uses
+`tools/wake_training/Kiko_Hey_Kiko_Training_Colab.ipynb` to generate synthetic
+positives, prepare free negative/noise data, train, export, inspect, and
+download the model without manual voice recording.
+
+`tools/wake_training/train_hey_kiko.py` trains a small mobile-friendly
 TensorFlow/Keras CNN over log-mel features and exports:
 
 ```text
@@ -52,12 +56,16 @@ tools/wake_training/output/training_report.json
 
 Supported profiles:
 
-- `sanity`: fast pipeline check, not expected to be accurate.
-- `balanced`: default GTX 1650-friendly first real model profile.
-- `quality`: slower, checkpointed profile with more augmentation.
+- `sanity`: small synthetic dataset and generated negative baseline; pipeline
+  check only.
+- `balanced`: more synthetic samples, more negatives/noise, GTX 1650-safe first
+  usable model target.
+- `quality`: larger synthetic dataset, hard negatives, more augmentation,
+  checkpoint/resume, longer training without reckless GPU overload.
 
 The current backend is not an openWakeWord hosted trainer. It is a local,
 controlled path so Kiko is not blocked by paid or broken public training UIs.
+Real voice samples can improve quality later, but they are optional.
 
 ## Android compatibility
 
@@ -70,6 +78,8 @@ accepts `[1, samples]`. Real wake detection therefore still needs one of:
 
 The Android settings/model status path reports feature-input models as needing
 an adapter instead of pretending they are production-ready.
+
+See `docs/ANDROID_WAKE_MODEL_ADAPTER.md` for the Android log-mel adapter plan.
 
 ## Quality tests
 
