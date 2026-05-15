@@ -23,10 +23,13 @@ or always-on Android SpeechRecognizer. Full voice recognition starts only after
 manual mic input or a wake-detected event.
 
 The open-source local engine expects a trained TFLite model at
-`app/src/main/assets/wake/hey_kiko.tflite`. Until that model is available, Kiko
-reports the model as missing and keeps manual mic plus Fake/Test wake available.
-The repo includes `tools/wake_training/` for pinned local/Colab training
-experiments so Kiko is not dependent on paid or broken hosted trainers.
+`app/src/main/assets/wake/hey_kiko.tflite`. Until that model is available and
+compatible, Kiko reports the model status clearly and keeps manual mic plus
+Fake/Test wake available. The repo includes `tools/wake_training/` for pinned
+local/Colab training so Kiko is not dependent on paid or broken hosted trainers.
+The current training backend exports a log-mel TFLite classifier and documents
+the Android feature-adapter work still needed before real wake detection can be
+claimed.
 
 ## V1 Features
 
@@ -108,7 +111,8 @@ compatible JDK.
 - V2: "Hey Kiko" wake phrase support. The current foundation adds the
   foreground service, fake engine, open-source AudioRecord/TFLite engine
   foundation, settings, notification, diagnostics, and tests. Real detection
-  requires a trained local `Hey Kiko` TFLite model.
+  requires a trained local `Hey Kiko` TFLite model plus matching Android
+  preprocessing if the model expects log-mel features.
 - V3: Accessibility automation for deeper app interaction after safety and user
   controls are mature.
 - Later: optional cloud AI and premium voice features, without weakening the

@@ -28,14 +28,39 @@ openWakeWord/microWakeWord-style models may expect:
 If the model expects any of those, Android needs a preprocessing adapter before
 calling the TFLite wake classifier.
 
+## Current training backend
+
+`train_hey_kiko.py` now trains a small log-mel CNN. Its expected input is:
+
+```text
+[1, n_mels, frames, 1]
+```
+
+That is a feature tensor, not raw waveform audio. The Android
+`TfliteWakeModelRunner` can detect this and report `Feature adapter needed`,
+but it cannot run real detection from this model until the same log-mel
+preprocessing is implemented in Kotlin or bundled into the TFLite model.
+
+Python preprocessing details:
+
+- 16 kHz mono audio.
+- Fixed 1.2-1.4 second window depending on profile.
+- `n_fft=400`, `win_length=400`, `hop_length=160`.
+- log-mel power spectrogram normalized to roughly `[-1.0, 1.0]`.
+
 ## Inspect a model
 
 ```bash
 python tools/wake_training/export_check.py tools/wake_training/output/hey_kiko.tflite
 ```
 
-The report prints input and output tensor details and warns when an adapter is
-needed.
+The report prints input/output tensor details and one of these statuses:
+
+- `raw-audio-compatible`: can be used by the current Android runner.
+- `feature-input-needs-adapter`: model found, but Android preprocessing is
+  required.
+- `unknown`: manual review needed.
+- `invalid`: missing, empty, or not loadable.
 
 ## Compatibility rule
 

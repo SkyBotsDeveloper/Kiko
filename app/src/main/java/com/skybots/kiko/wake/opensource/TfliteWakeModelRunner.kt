@@ -33,8 +33,8 @@ class TfliteWakeModelRunner(
             val inputTensor = created.getInputTensor(0)
             val outputTensor = created.getOutputTensor(0)
 
-            // TODO: Add a preprocessing adapter when the trained model expects mel
-            // spectrograms or openWakeWord-style embeddings instead of raw samples.
+            // TODO: Add a Kotlin log-mel/MFCC preprocessing adapter when the
+            // trained model expects feature tensors instead of raw samples.
             if (inputTensor.dataType() != DataType.FLOAT32 || outputTensor.dataType() != DataType.FLOAT32) {
                 created.close()
                 return WakeEngineHealth.modelInvalid(
@@ -44,6 +44,11 @@ class TfliteWakeModelRunner(
 
             val inputShape = inputTensor.shape()
             if (inputShape.size != 2 || inputShape.firstOrNull() != 1) {
+                if (inputShape.size == 4 && inputShape.firstOrNull() == 1) {
+                    created.close()
+                    WakeWordDiagnostics.modelStatus(WakeEngineHealthStatus.FEATURE_INPUT_NEEDS_ADAPTER.name)
+                    return WakeEngineHealth.featureInputNeedsAdapter()
+                }
                 created.close()
                 return WakeEngineHealth.modelInvalid(
                     "Wake model input shape is not supported yet. Expected [1, samples].",
@@ -64,8 +69,8 @@ class TfliteWakeModelRunner(
             inputWrapper = arrayOf(inputBuffer)
             outputBuffer = arrayOf(FloatArray(outputLength))
             interpreter = created
-            WakeWordDiagnostics.modelStatus(WakeEngineHealthStatus.READY.name)
-            WakeEngineHealth.ready()
+            WakeWordDiagnostics.modelStatus(WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE.name)
+            WakeEngineHealth.rawAudioCompatible()
         }.getOrElse { error ->
             WakeWordDiagnostics.modelInferenceError(error.message ?: "TFLite wake model load failed.")
             WakeEngineHealth.modelInvalid(error.message ?: "TFLite wake model load failed.")

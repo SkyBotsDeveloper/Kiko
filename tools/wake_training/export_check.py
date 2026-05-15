@@ -33,6 +33,23 @@ class CompatibilityReport:
             and first_input.get("shape", [None])[0] == 1
         )
 
+    @property
+    def compatibility_status(self) -> str:
+        if self.errors:
+            return "invalid"
+        if not self.inputs or not self.outputs:
+            return "unknown"
+        first_input = self.inputs[0]
+        if self.compatible_with_current_android_runner:
+            return "raw-audio-compatible"
+        if (
+            first_input.get("dtype") == "float32"
+            and first_input.get("shape_rank") == 4
+            and first_input.get("shape", [None])[0] == 1
+        ):
+            return "feature-input-needs-adapter"
+        return "unknown"
+
 
 def load_interpreter_class():
     try:
@@ -77,7 +94,13 @@ def build_report(model_path: Path) -> CompatibilityReport:
         report.errors.append(f"Could not load TFLite model: {error}")
         return report
 
-    if not report.compatible_with_current_android_runner:
+    if report.compatibility_status == "feature-input-needs-adapter":
+        report.warnings.append(
+            "Model appears to expect feature input such as log-mel or MFCC "
+            "[1, features, frames, channels]. Android needs a matching "
+            "preprocessing adapter before real wake detection.",
+        )
+    elif not report.compatible_with_current_android_runner:
         report.warnings.append(
             "Current Android runner supports simple float32 [1, samples] input. "
             "Models that expect mel spectrograms or embeddings need an adapter.",
@@ -98,6 +121,7 @@ def print_report(report: CompatibilityReport) -> None:
     for item in report.outputs:
         print(f"  - {item}")
     print(f"Android raw-sample runner compatible: {report.compatible_with_current_android_runner}")
+    print(f"Compatibility status: {report.compatibility_status}")
     for warning in report.warnings:
         print(f"WARNING: {warning}")
     for error in report.errors:

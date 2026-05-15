@@ -4,6 +4,8 @@ enum class WakeEngineHealthStatus(
     val label: String,
 ) {
     READY("Found"),
+    RAW_AUDIO_COMPATIBLE("Raw-audio compatible"),
+    FEATURE_INPUT_NEEDS_ADAPTER("Feature adapter needed"),
     MODEL_FOUND_COMPATIBILITY_UNKNOWN("Found, compatibility unknown"),
     DISABLED("Disabled"),
     MODEL_MISSING("Missing"),
@@ -19,11 +21,24 @@ data class WakeEngineHealth(
 ) {
     val isReady: Boolean
         get() = status == WakeEngineHealthStatus.READY ||
+            status == WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE ||
             status == WakeEngineHealthStatus.MODEL_FOUND_COMPATIBILITY_UNKNOWN
 
     companion object {
         fun ready(message: String = "Open-source Hey Kiko model found."): WakeEngineHealth =
             WakeEngineHealth(WakeEngineHealthStatus.READY, message)
+
+        fun rawAudioCompatible(): WakeEngineHealth =
+            WakeEngineHealth(
+                WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE,
+                "Model found and compatible with the current raw-audio Android runner.",
+            )
+
+        fun featureInputNeedsAdapter(): WakeEngineHealth =
+            WakeEngineHealth(
+                WakeEngineHealthStatus.FEATURE_INPUT_NEEDS_ADAPTER,
+                "Model found, but it expects feature input. Android needs a matching preprocessing adapter.",
+            )
 
         fun modelFoundCompatibilityUnknown(): WakeEngineHealth =
             WakeEngineHealth(

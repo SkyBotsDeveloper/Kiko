@@ -11,3 +11,7 @@ Expected path:
 ```text
 app/src/main/assets/wake/hey_kiko.tflite
 ```
+
+If the model was exported by `tools/wake_training/train_hey_kiko.py`, it expects
+log-mel feature input. Android needs the matching feature adapter before that
+model can run real wake detection from live AudioRecord frames.

@@ -39,5 +39,18 @@ Watch for:
 - AudioRecord stops before SpeechRecognizer starts.
 - Disabling wake word stops the service and releases microphone resources.
 - Missing model does not crash the app.
+- Feature-input models are not used until the Android preprocessing adapter is
+  implemented.
+- Wake threshold and debounce are tuned conservatively before long idle tests.
+
+## Candidate model tests
+
+For each `hey_kiko.tflite` candidate:
+
+1. Run `tools/wake_training/export_check.py` and save the compatibility status.
+2. Confirm Android settings show the expected model status.
+3. Test false wake behavior in a quiet room for at least 30 minutes.
+4. Test normal speech, Hindi/Hinglish phrases, and TV/music background.
+5. Compare Low/Balanced/High sensitivity only after the base threshold is safe.
 
 Battery optimization is a release blocker for real wake detection.

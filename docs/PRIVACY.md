@@ -30,3 +30,8 @@ personalization decisions.
 Real wake-word detection requires a trained local TFLite model in a later
 phase. Private training data, generated model artifacts, and non-redistributable
 models must stay out of the repository.
+
+The wake training toolkit is local-first. User-recorded wake samples, negative
+audio, generated samples, checkpoints, and exported models are ignored by Git
+and should not be uploaded to hosted services unless the user intentionally does
+so with proper consent.

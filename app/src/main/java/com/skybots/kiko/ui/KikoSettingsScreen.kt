@@ -474,6 +474,10 @@ private fun wakeWordHelpText(health: WakeEngineHealth): String =
     when (health.status) {
         com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.READY ->
             "Kiko uses a foreground service for wake-word listening. Full voice recognition starts only after \"Hey Kiko\" is detected."
+        com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.RAW_AUDIO_COMPATIBLE ->
+            "Model found and compatible with the current raw-audio runner. Verify wake detection on a real phone before treating it as production ready."
+        com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.FEATURE_INPUT_NEEDS_ADAPTER ->
+            "Model found, but it needs a matching Android feature adapter before real wake detection can run. Manual mic and Fake/Test still work."
         com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.MODEL_FOUND_COMPATIBILITY_UNKNOWN ->
             health.message
         com.skybots.kiko.wake.opensource.WakeEngineHealthStatus.MODEL_MISSING ->

@@ -37,6 +37,7 @@ secrets.*
 *.ckpt
 *.pt
 *.pth
+*.keras
 app/src/main/assets/wake/*.tflite
 app/src/main/assets/wake/*.ppn
 app/src/main/assets/wake/*.pv
@@ -45,12 +46,18 @@ app/src/main/assets/wake/*.pv
 
 # Wake training outputs and datasets
 tools/wake_training/output/
+tools/wake_training/runs/
 tools/wake_training/datasets/
 tools/wake_training/generated_samples/
 tools/wake_training/training_runs/
+tools/wake_training/data/**
+!tools/wake_training/data/
+!tools/wake_training/data/README.md
 datasets/
 generated_samples/
 training_runs/
+.ipynb_checkpoints/
+tools/wake_training/**/*.wav
 
 # Kotlin
 *.kotlin_module

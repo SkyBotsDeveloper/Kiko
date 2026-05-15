@@ -14,10 +14,11 @@ production-ready.
 ## Wake enabled
 
 1. Install a candidate `hey_kiko.tflite`.
-2. Enable wake word.
-3. Confirm the foreground notification is visible.
-4. Leave the phone idle for the same duration as baseline.
-5. Record battery drop, temperature, CPU behavior, and wake false triggers.
+2. Confirm `export_check.py` and Android settings agree on model compatibility.
+3. Enable wake word.
+4. Confirm the foreground notification is visible.
+5. Leave the phone idle for the same duration as baseline.
+6. Record battery drop, temperature, CPU behavior, and wake false triggers.
 
 ## Useful commands
 
@@ -37,3 +38,5 @@ adb logcat | grep KikoDiagnostics
 - CPU remains low while idle.
 - Battery drain is acceptable versus baseline.
 - No false wake in quiet conditions during the test window.
+- Feature-input models are not treated as active wake models until Android has
+  matching preprocessing.

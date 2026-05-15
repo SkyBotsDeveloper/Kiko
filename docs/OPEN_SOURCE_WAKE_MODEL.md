@@ -41,9 +41,40 @@ python tools/wake_training/export_check.py tools/wake_training/output/hey_kiko.t
 
 ## Training direction
 
-An openWakeWord-style model can be trained for custom phrases such as `Hey
-Kiko`. The model should be trained and evaluated with 16 kHz mono audio and
-should be tested against:
+The repo now includes a practical local backend in
+`tools/wake_training/train_hey_kiko.py`. It trains a small mobile-friendly
+TensorFlow/Keras CNN over log-mel features and exports:
+
+```text
+tools/wake_training/output/hey_kiko.tflite
+tools/wake_training/output/training_report.json
+```
+
+Supported profiles:
+
+- `sanity`: fast pipeline check, not expected to be accurate.
+- `balanced`: default GTX 1650-friendly first real model profile.
+- `quality`: slower, checkpointed profile with more augmentation.
+
+The current backend is not an openWakeWord hosted trainer. It is a local,
+controlled path so Kiko is not blocked by paid or broken public training UIs.
+
+## Android compatibility
+
+The training backend exports a log-mel feature model shaped like
+`[1, n_mels, frames, 1]`. Android currently has a raw-audio TFLite runner that
+accepts `[1, samples]`. Real wake detection therefore still needs one of:
+
+- Kotlin log-mel preprocessing that matches Python exactly.
+- A TFLite model that includes preprocessing and accepts raw 16 kHz samples.
+
+The Android settings/model status path reports feature-input models as needing
+an adapter instead of pretending they are production-ready.
+
+## Quality tests
+
+The model should be trained and evaluated with 16 kHz mono audio and should be
+tested against:
 
 - false accepts
 - false rejects

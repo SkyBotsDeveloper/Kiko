@@ -1,13 +1,15 @@
 # Colab Training Guide
 
-Use this path when a local Linux/WSL machine is not available. The goal is to
-avoid relying on Colab's global Python packages, which can change and break old
-notebooks.
+Use this path when local WSL/Linux is unavailable. The goal is to avoid
+Colab's global Python packages, which can change and break old notebooks.
+
+The repo-local backend trains a small log-mel CNN and exports TFLite. It does
+not use hosted wake-word trainers, Picovoice, API keys, or cloud wake detection.
 
 ## 1. Start a fresh Colab notebook
 
-Use a CPU runtime first. GPU can be tested later if the selected backend
-benefits from it.
+Use a CPU runtime for the first sanity run. Switch to GPU only after the
+dataset layout and dependencies work.
 
 ## 2. Install micromamba
 
@@ -16,7 +18,8 @@ benefits from it.
 !./bin/micromamba shell init -s bash -p ~/micromamba
 ```
 
-Restart the shell cell after initialization if Colab asks.
+If Colab asks for a shell restart, run the next cells with the full
+`~/micromamba/bin/micromamba` path.
 
 ## 3. Clone Kiko and create the pinned environment
 
@@ -24,39 +27,60 @@ Restart the shell cell after initialization if Colab asks.
 !git clone https://github.com/SkyBotsDeveloper/Kiko.git
 %cd Kiko
 !git checkout v2-wake-word
-!./bin/micromamba create -y -f tools/wake_training/environment.yml
+!~/micromamba/bin/micromamba create -y -f tools/wake_training/environment.yml
 ```
 
-If `./bin/micromamba` is not available after changing directories, use the full
-path from the install cell.
+Target Python is 3.10.
 
-## 4. Put datasets in Drive or Colab storage
+## 4. Add local dataset files
 
-Recommended temporary layout:
+Recommended layout:
 
 ```text
-tools/wake_training/datasets/hey_kiko/
+tools/wake_training/data/
   positive/
+    hey_kiko/
   negative/
+  background_noise/
   validation/
+    positive/
+    negative/
 ```
 
-Do not commit datasets. Keep consent and privacy records for any voice samples.
+Mount Drive or upload a ZIP, then unpack into that layout. Do not commit
+datasets. Keep consent records for any voice samples.
 
-## 5. Run the scaffold
+## 5. Run training
+
+Sanity:
 
 ```bash
 !~/micromamba/envs/kiko-wake-training/bin/python \
-  tools/wake_training/train_hey_kiko.py \
-  --dataset-dir tools/wake_training/datasets/hey_kiko
+  tools/wake_training/train_hey_kiko.py --profile sanity
 ```
 
-The script currently validates setup and stops until a real backend is
-implemented.
+Balanced:
 
-## 6. Export and check the model
+```bash
+!~/micromamba/envs/kiko-wake-training/bin/python \
+  tools/wake_training/train_hey_kiko.py --profile balanced
+```
 
-After backend implementation:
+Quality with checkpoint resume:
+
+```bash
+!~/micromamba/envs/kiko-wake-training/bin/python \
+  tools/wake_training/train_hey_kiko.py --profile quality --resume
+```
+
+If GPU memory is tight:
+
+```bash
+!~/micromamba/envs/kiko-wake-training/bin/python \
+  tools/wake_training/train_hey_kiko.py --profile balanced --batch-size 8 --max-vram-gb 2.5
+```
+
+## 6. Check export
 
 ```bash
 !~/micromamba/envs/kiko-wake-training/bin/python \
@@ -64,4 +88,5 @@ After backend implementation:
   tools/wake_training/output/hey_kiko.tflite
 ```
 
-Only install models that pass compatibility review and real-device tests.
+The current backend should report `feature-input-needs-adapter`; Android needs
+matching log-mel preprocessing before real wake detection.

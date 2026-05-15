@@ -21,6 +21,14 @@ class WakeModelAssetManagerTest {
     }
 
     @Test
+    fun featureInputModelHealthIsNotRunnableUntilAdapterExists() {
+        val health = WakeEngineHealth.featureInputNeedsAdapter()
+
+        assertEquals(WakeEngineHealthStatus.FEATURE_INPUT_NEEDS_ADAPTER, health.status)
+        assertFalse(health.isReady)
+    }
+
+    @Test
     fun tfliteRunnerFailsGracefullyWhenModelMissing() {
         val runner = TfliteWakeModelRunner(
             assetManager = WakeModelAssetManager(modelExists = { false }),
